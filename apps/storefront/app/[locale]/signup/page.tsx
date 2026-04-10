@@ -3,16 +3,35 @@
 import { useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { Link } from '../../../i18n/routing';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [validationError, setValidationError] = useState('');
   const { register } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Standard frontend validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setValidationError('Please enter a valid email address.');
+      return;
+    }
+
+    // Standard robust password validation (8+ chars, 1 uppercase, 1 lowercase, 1 number)
+    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passRegex.test(password)) {
+      setValidationError('Password must be 8+ characters with uppercase, lowercase, and numbers.');
+      return;
+    }
+
+    setValidationError('');
     register.mutate({ firstName, lastName, email, password });
   };
 
@@ -54,20 +73,29 @@ export default function SignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-minimal-red/50 transition-all text-foreground"
+              className="w-full bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-[#ff3b30]/50 transition-all text-[#111] font-medium"
               placeholder="hey@example.com"
             />
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">Password</label>
-            <input 
-              type="password" 
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-minimal-red/50 transition-all text-foreground"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 pr-12 outline-none focus:ring-2 focus:ring-[#ff3b30]/50 transition-all text-[#111] font-medium"
+                placeholder="••••••••"
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#888888] hover:text-[#111] transition-colors outline-none cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button 
@@ -77,6 +105,8 @@ export default function SignupPage() {
           >
             {register.isPending ? 'Signing up...' : 'Create Account'}
           </button>
+          
+          {validationError && <p className="text-minimal-red text-sm text-center font-bold">{validationError}</p>}
           {register.isError && <p className="text-minimal-red text-sm text-center">Registration failed</p>}
         </form>
 

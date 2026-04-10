@@ -63,11 +63,15 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = Cookies.get('refreshToken');
+      const isAuthPage = typeof window !== 'undefined' && (window.location.pathname.includes('/login') || window.location.pathname.includes('/signup'));
+
       if (!refreshToken) {
         // Handle logout
         Cookies.remove('accessToken');
         Cookies.remove('refreshToken');
-        window.location.href = '/login';
+        if (!isAuthPage) {
+            window.location.href = '/login';
+        }
         return Promise.reject(error);
       }
 
@@ -79,8 +83,8 @@ apiClient.interceptors.response.use(
         const newAccessToken = data.accessToken;
         const newRefreshToken = data.refreshToken;
 
-        Cookies.set('accessToken', newAccessToken, { secure: true, sameSite: 'strict' });
-        Cookies.set('refreshToken', newRefreshToken, { secure: true, sameSite: 'strict' });
+        Cookies.set('accessToken', newAccessToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
+        Cookies.set('refreshToken', newRefreshToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
 
         apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -92,7 +96,9 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         Cookies.remove('accessToken');
         Cookies.remove('refreshToken');
-        window.location.href = '/login';
+        if (!isAuthPage) {
+            window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

@@ -2,6 +2,7 @@
 
 import { ShoppingBag, Globe, LogOut } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, usePathname, useRouter } from '../i18n/routing';
 import { useCart } from '../hooks/useCart';
 import Cookies from 'js-cookie';
@@ -10,6 +11,7 @@ export default function Navbar() {
   const { cart } = useCart();
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
 
   const handleLangChange = (locale: string) => {
     // @ts-ignore
@@ -19,7 +21,8 @@ export default function Navbar() {
   const handleLogout = () => {
     Cookies.remove('accessToken');
     Cookies.remove('refreshToken');
-    window.location.href = '/login';
+    queryClient.clear();
+    router.replace('/login');
   };
 
   const cartItemCount = cart.data?.items?.length || 0;

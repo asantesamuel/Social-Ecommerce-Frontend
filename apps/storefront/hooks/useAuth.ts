@@ -13,8 +13,8 @@ export const useAuth = () => {
       return data;
     },
     onSuccess: (data) => {
-      Cookies.set('accessToken', data.accessToken, { secure: true, sameSite: 'strict' });
-      Cookies.set('refreshToken', data.refreshToken, { secure: true, sameSite: 'strict' });
+      Cookies.set('accessToken', data.accessToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
+      Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
       apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
       queryClient.invalidateQueries();
       router.push('/');
@@ -27,8 +27,8 @@ export const useAuth = () => {
       return data;
     },
     onSuccess: (data) => {
-      Cookies.set('accessToken', data.accessToken, { secure: true, sameSite: 'strict' });
-      Cookies.set('refreshToken', data.refreshToken, { secure: true, sameSite: 'strict' });
+      Cookies.set('accessToken', data.accessToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
+      Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
       apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
       queryClient.invalidateQueries();
       router.push('/');
