@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
+import QueryProvider from "../../lib/QueryProvider";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 import "../globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -27,9 +30,13 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={`${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
+      <body className={`${spaceGrotesk.variable} antialiased min-h-screen flex flex-col`} suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <QueryProvider>
+            <Navbar />
+            {children}
+            <Footer />
+          </QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -2,32 +2,31 @@
 @config "../tailwind.config.ts";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-  }
+  --background: #fcfcfc;
+  --foreground: #09090b;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-space-grotesk), sans-serif;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em; /* Chunky Typography */
 }
 
+/* Crisp white cards with 24px roundness - NO dark mode per Red and White theme */
 .glass-card {
-  @apply bg-white/70 backdrop-blur-glass border border-white/20 shadow-glass rounded-2xl p-6 dark:bg-black/50 dark:border-white/10;
+  @apply bg-white border border-[#f4f4f5] shadow-2xl shadow-black/5 rounded-[24px] p-6 transition-all duration-300;
 }
 
 .bento-grid {
-  @apply grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4;
+  @apply grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 p-0;
 }
 
 .bento-item {
-  @apply rounded-[2rem] overflow-hidden;
+  @apply rounded-[24px] overflow-hidden;
+}
+
+/* Dopamine Accents: used exclusively for high-energy interactive states */
+.btn-dopamine {
+  @apply bg-[#ff3b30] text-white hover:bg-[#d63025] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 rounded-[24px] shadow-xl shadow-[#ff3b30]/30 font-black tracking-widest uppercase;
 }

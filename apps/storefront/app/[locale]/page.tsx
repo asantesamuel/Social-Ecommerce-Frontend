@@ -1,102 +1,67 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+'use client';
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
-
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
-
-  return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
+import { useProducts, useCategories } from '../../hooks/useCatalog';
+import { useTranslations } from 'next-intl';
+import { Link } from '../../i18n/routing';
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const t = useTranslations('Index');
+  const { data: productsData, isLoading: pLoad } = useProducts({ limit: 12 });
+  const { data: categoriesData, isLoading: cLoad } = useCategories();
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+  return (
+    <main className="container mx-auto px-4 pt-24 pb-12 flex-1 relative z-10 w-full">
+      <div className="mb-12 max-w-4xl">
+        <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter uppercase leading-[0.9]">{t('title')}</h1>
+        <p className="text-[#888888] text-xl md:text-3xl font-bold tracking-tight max-w-3xl leading-snug">
+          The curated catalog of refined modern goods. Connect straight to our high-energy inventory.
+        </p>
+      </div>
+
+      <div className="mb-16">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-minimal-gray mb-6">Collections</h2>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          {cLoad ? (
+            <div className="h-14 w-40 bg-black/5 dark:bg-white/10 rounded-2xl animate-pulse" />
+          ) : (
+            categoriesData?.map((cat: any) => (
+              <button key={cat.id} className="whitespace-nowrap px-8 py-4 rounded-[24px] bg-white border border-[#f4f4f5] shadow-md font-black tracking-widest uppercase hover:bg-[#ff3b30] hover:text-white text-[#111] transition-all cursor-pointer hover:-translate-y-1">
+                {cat.name}
+              </button>
+            ))
+          )}
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
-    </div>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-minimal-gray mb-6">Latest Arrivals</h2>
+        {pLoad ? (
+          <div className="bento-grid gap-6 p-0">
+             {[1,2,3,4].map(i => <div key={i} className="h-80 glass-card animate-pulse rounded-3xl" />)}
+          </div>
+        ) : (
+          <div className="bento-grid gap-6 p-0">
+            {productsData?.data?.items?.map((product: any) => (
+              <Link href={`/products/${product.id}`} key={product.id} className="bento-item glass-card group flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-xl shadow-sm rounded-3xl p-5">
+                <div className="w-full aspect-square bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 rounded-2xl mb-6 overflow-hidden relative">
+                   {product.imageUrls?.[0] ? (
+                      <img src={product.imageUrls[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                   ) : (
+                      <div className="w-full h-full flex items-center justify-center text-minimal-gray font-bold tracking-widest opacity-50 uppercase text-xs">No Image</div>
+                   )}
+                </div>
+                <div className="flex justify-between items-start mt-auto flex-col gap-2">
+                   <div>
+                     <h3 className="font-bold text-xl leading-tight mb-2 tracking-tight group-hover:text-minimal-red transition-colors">{product.name}</h3>
+                     <p className="text-minimal-gray text-sm line-clamp-2 font-medium leading-relaxed">{product.description}</p>
+                   </div>
+                   <div className="font-black text-2xl text-foreground mt-4">${product.price.toFixed(2)}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
