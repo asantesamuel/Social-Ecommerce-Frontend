@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { Link } from '../../../i18n/routing';
 import { Eye, EyeOff } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState('');
@@ -12,7 +13,11 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [companyEstablishedDate, setCompanyEstablishedDate] = useState('');
   const { register } = useAuth();
+  const searchParams = useSearchParams();
+  const isVendor = searchParams.get('role') === 'vendor';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,14 +37,25 @@ export default function SignupPage() {
     }
 
     setValidationError('');
-    register.mutate({ firstName, lastName, email, password });
+    register.mutate({ 
+      firstName, 
+      lastName, 
+      email, 
+      password,
+      role: isVendor ? 'vendor' : 'customer',
+      ...(isVendor && { companyName, companyEstablishedDate })
+    });
   };
 
   return (
     <div className="flex h-screen w-full items-center justify-center p-4">
       <div className="glass-card w-full max-w-md shadow-2xl p-8 lg:p-12">
-        <h1 className="text-4xl font-black mb-2 text-center text-[#111] tracking-tighter">Create Account</h1>
-        <p className="text-[#888888] mb-8 text-center font-medium">Join the future of commerce.</p>
+        <h1 className="text-4xl font-black mb-2 text-center text-[#111] tracking-tighter">
+          {isVendor ? 'Vendor Partner' : 'Create Account'}
+        </h1>
+        <p className="text-[#888888] mb-8 text-center font-medium">
+          {isVendor ? 'Launch your storefront in minutes.' : 'Join the future of commerce.'}
+        </p>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
@@ -77,6 +93,33 @@ export default function SignupPage() {
               placeholder="hey@example.com"
             />
           </div>
+
+          {isVendor && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Company Name</label>
+                <input 
+                  type="text" 
+                  required={isVendor}
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className="w-full bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-[#ff3b30]/50 transition-all text-[#111] font-medium"
+                  placeholder="Acme Corp"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Est. Date</label>
+                <input 
+                  type="date" 
+                  required={isVendor}
+                  value={companyEstablishedDate}
+                  onChange={(e) => setCompanyEstablishedDate(e.target.value)}
+                  className="w-full bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-[#ff3b30]/50 transition-all text-[#111] font-medium"
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-sm font-medium mb-1 block">Password</label>
             <div className="relative">

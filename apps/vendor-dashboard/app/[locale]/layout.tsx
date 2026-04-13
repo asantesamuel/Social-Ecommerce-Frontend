@@ -10,9 +10,11 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+import QueryProvider from "../../lib/QueryProvider";
+
 export const metadata: Metadata = {
-  title: "Storefront",
-  description: "E-Commerce App",
+  title: "Vendor Dashboard",
+  description: "Manage your storefront and products easily.",
 };
 
 export default async function RootLayout({
@@ -28,7 +30,9 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning>
       <body className={`${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <QueryProvider>
+            {children}
+          </QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>

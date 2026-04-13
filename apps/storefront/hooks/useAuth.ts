@@ -17,7 +17,15 @@ export const useAuth = () => {
       Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
       apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
       queryClient.invalidateQueries();
-      router.push('/');
+      
+      const role = data.user?.role;
+      if (role === 'admin') {
+        window.location.href = 'http://localhost:3002';
+      } else if (role === 'vendor') {
+        window.location.href = 'http://localhost:3003';
+      } else {
+        router.push('/');
+      }
     },
   });
 
@@ -31,7 +39,15 @@ export const useAuth = () => {
       Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
       apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
       queryClient.invalidateQueries();
-      router.push('/');
+      
+      const role = data.user?.role;
+      if (role === 'admin') {
+        window.location.href = 'http://localhost:3002';
+      } else if (role === 'vendor') {
+        window.location.href = 'http://localhost:3003';
+      } else {
+        router.push('/');
+      }
     },
   });
 

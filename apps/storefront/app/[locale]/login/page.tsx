@@ -65,9 +65,13 @@ export default function LoginPage() {
           {login.isError && <p className="text-minimal-red text-sm text-center">Invalid credentials</p>}
         </form>
 
-        <p className="mt-6 text-center text-sm text-minimal-gray">
-          Don't have an account? <Link href="/signup" className="text-minimal-red hover:underline">Sign up</Link>
-        </p>
+        <div className="mt-6 text-center text-sm text-minimal-gray flex flex-col gap-3">
+          <span>Don't have an account?</span>
+          <div className="flex justify-center gap-6">
+            <Link href="/signup" className="text-minimal-red hover:underline font-semibold transition-all">Sign up as Customer</Link>
+            <Link href="/signup?role=vendor" className="text-minimal-red hover:underline font-semibold transition-all">Become a Vendor</Link>
+          </div>
+        </div>
       </div>
     </div>
   );
