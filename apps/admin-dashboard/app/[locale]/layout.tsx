@@ -4,6 +4,9 @@ import "../globals.css";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
+import AdminLayout from '../../components/AdminLayout';
+import QueryProvider from '../../lib/QueryProvider';
+
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
@@ -11,8 +14,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Storefront",
-  description: "E-Commerce App",
+  title: "Admin Command Center",
+  description: "Manage ecommerce platform globally.",
 };
 
 export default async function RootLayout({
@@ -27,8 +30,12 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={`${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
-        <NextIntlClientProvider messages={messages}>
-          {children}
+        <NextIntlClientProvider messages={messages} locale={locale}>
+          <QueryProvider>
+            <AdminLayout locale={locale}>
+              {children}
+            </AdminLayout>
+          </QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>

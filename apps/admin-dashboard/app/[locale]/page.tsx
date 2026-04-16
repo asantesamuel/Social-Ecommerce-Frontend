@@ -1,102 +1,83 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+'use client';
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
+import { useAdminAnalytics } from '../../hooks/useAdmin';
 
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
+export default function AdminOverview() {
+  const { data, isLoading, isError } = useAdminAnalytics();
+
+  if (isLoading) return <div className="flex h-full items-center justify-center p-8 text-2xl font-black">SYNCING OVERVIEW...</div>;
+  if (isError) return <div className="text-[#ff3b30] font-black text-2xl">FAILED TO FETCH ANALYTICS</div>;
+
+  const { overview, orders, recentOrders, topProducts } = data;
 
   return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
+    <div className="flex flex-col gap-8">
+      <header>
+        <h2 className="text-4xl font-black uppercase tracking-tighter">Platform Overview</h2>
+        <p className="text-gray-500 font-medium">Real-time telemetry and metrics.</p>
+      </header>
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+      {/* Metrics Bento Grid */}
+      <div className="bento-grid">
+        <div className="glass-card shadow-lg bg-black text-white dark:bg-white dark:text-black">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400 dark:text-gray-600 mb-2">Total Revenue</h3>
+          <p className="text-4xl font-black">${overview.totalRevenue.toLocaleString()}</p>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
+        <div className="glass-card">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Total Orders</h3>
+          <p className="text-4xl font-black text-[#ff3b30]">{overview.totalOrders.toLocaleString()}</p>
+        </div>
+        <div className="glass-card">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Platform Users</h3>
+          <p className="text-4xl font-black">{overview.totalUsers.toLocaleString()}</p>
+        </div>
+        <div className="glass-card">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Active Vendors</h3>
+          <p className="text-4xl font-black">{overview.totalVendors.toLocaleString()}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Orders */}
+        <div className="glass-card">
+          <h3 className="text-xl font-bold uppercase tracking-tighter mb-6">Recent Orders</h3>
+          <div className="flex flex-col gap-4">
+            {recentOrders.map((order: any) => (
+              <div key={order.id} className="flex justify-between items-center py-2 border-b border-[#f4f4f5] dark:border-white/10 last:border-0">
+                <div>
+                  <p className="font-bold">{order.customer}</p>
+                  <p className="text-xs text-gray-500 font-medium">{new Date(order.placedAt).toLocaleString()}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-black">${order.total}</p>
+                  <span className="text-[10px] font-bold uppercase px-2 py-1 bg-gray-100 dark:bg-white/10 rounded-full">{order.status}</span>
+                </div>
+              </div>
+            ))}
+            {recentOrders.length === 0 && <p className="text-gray-500 text-sm">No recent orders.</p>}
+          </div>
+        </div>
+
+        {/* Top Products */}
+        <div className="glass-card flex flex-col">
+          <h3 className="text-xl font-bold uppercase tracking-tighter mb-6">Top Performers</h3>
+          <div className="flex flex-col gap-4 flex-1">
+            {topProducts.map((p: any, i: number) => (
+              <div key={p.productId} className="flex justify-between items-center py-2 border-b border-[#f4f4f5] dark:border-white/10 last:border-0">
+                <div className="flex items-center gap-4">
+                  <span className="text-2xl font-black text-gray-300 dark:text-gray-600">0{i + 1}</span>
+                  <p className="font-bold truncate max-w-[200px]">{p.productName}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-black">${p.revenue}</p>
+                  <p className="text-xs text-gray-500 font-medium">{p.totalSold} sold</p>
+                </div>
+              </div>
+            ))}
+            {topProducts.length === 0 && <p className="text-gray-500 text-sm">No sales data.</p>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
