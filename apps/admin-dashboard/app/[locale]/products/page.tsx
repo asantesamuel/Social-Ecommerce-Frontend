@@ -72,7 +72,7 @@ export default function ModerationQueuePage() {
                   
                   <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest text-gray-400 mb-6">
                     <div className="bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">Category: {product.category?.name || 'Uncategorized'}</div>
-                    <div className="bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">Vendor: {product.vendor?.businessName || 'Unknown'}</div>
+                    <div className="bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">Vendor: {product.vendor?.companyName || 'Unknown'}</div>
                     <div className="bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">Stock: {product.stockQuantity}</div>
                   </div>
 

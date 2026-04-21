@@ -82,7 +82,7 @@ export default function ProductDetail() {
 
           <div className="text-sm font-semibold text-minimal-gray flex gap-6 pt-8 border-t border-black/5 dark:border-white/10">
              <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500"></div><strong className="text-foreground">{product.stockQuantity}</strong> in stock</span>
-             <span>Vendor: <strong className="text-foreground">{product.vendor?.businessName || 'N/A'}</strong></span>
+             <span>Vendor: <strong className="text-foreground">{product.vendor?.companyName || 'N/A'}</strong></span>
           </div>
         </div>
       </div>
