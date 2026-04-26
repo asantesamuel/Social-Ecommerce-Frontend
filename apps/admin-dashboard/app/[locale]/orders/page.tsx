@@ -3,6 +3,21 @@
 import { useAdminOrders } from '../../../hooks/useAdmin';
 import React, { useState } from 'react';
 
+interface Order {
+  id: string | number;
+  customer: string;
+  placedAt: string | Date;
+  itemCount: number;
+  total: number | string;
+  status: string;
+}
+
+interface OrderPage {
+  data: Order[];
+  page: number;
+  totalPages: number;
+}
+
 export default function OrdersManagementPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useAdminOrders(statusFilter);
@@ -10,7 +25,7 @@ export default function OrdersManagementPage() {
   if (isLoading) return <div className="flex h-full items-center justify-center p-8 text-2xl font-black">FETCHING ORDERS...</div>;
   if (isError) return <div className="text-[#ff3b30] font-black text-2xl">FAILED TO FETCH ORDERS</div>;
 
-  const orders = data?.pages.flatMap((page: any) => page.data) || [];
+  const orders = data?.pages.flatMap((page: OrderPage) => page.data) || [];
 
   return (
     <div className="flex flex-col gap-8">
@@ -20,6 +35,7 @@ export default function OrdersManagementPage() {
           <p className="text-gray-500 font-medium whitespace-nowrap">Global logistics and sales stream.</p>
         </div>
         <select 
+          aria-label='Order Status Filter'
           value={statusFilter} 
           onChange={(e) => setStatusFilter(e.target.value)}
           className="bg-transparent border border-[#e4e4e7] dark:border-white/20 rounded-xl px-4 py-2 font-bold uppercase text-sm outline-none"
@@ -48,9 +64,9 @@ export default function OrdersManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order: any) => (
+              {orders.map((order: Order) => (
                 <tr key={order.id} className="border-b border-[#f4f4f5] dark:border-white/10 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <td className="p-4 font-bold max-w-[120px] truncate" title={order.id}>{order.id}</td>
+                  <td className="p-4 font-bold max-w-[120px] truncate" title={String(order.id)}>{order.id}</td>
                   <td className="p-4 text-gray-600 dark:text-gray-300 font-medium">{order.customer}</td>
                   <td className="p-4 text-gray-500 font-medium text-xs">{new Date(order.placedAt).toLocaleString()}</td>
                   <td className="p-4 font-bold">{order.itemCount}</td>

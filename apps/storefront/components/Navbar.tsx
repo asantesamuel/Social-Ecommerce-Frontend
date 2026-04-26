@@ -14,7 +14,6 @@ export default function Navbar() {
   const queryClient = useQueryClient();
 
   const handleLangChange = (locale: string) => {
-    // @ts-ignore
     router.replace(pathname, { locale });
   };
 
@@ -36,7 +35,7 @@ export default function Navbar() {
       <div className="flex items-center gap-6">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <button className="flex items-center gap-2 hover:opacity-70 transition-opacity outline-none">
+            <button aria-label='Language' className="flex items-center gap-2 hover:opacity-70 transition-opacity outline-none">
               <Globe size={20} />
             </button>
           </DropdownMenu.Trigger>
@@ -61,7 +60,7 @@ export default function Navbar() {
             </span>
           )}
         </Link>
-        <button onClick={handleLogout} className="hover:opacity-70 transition-opacity text-minimal-gray hover:text-minimal-red">
+        <button aria-label='Logout' onClick={handleLogout} className="hover:opacity-70 transition-opacity text-minimal-gray hover:text-minimal-red">
           <LogOut size={20} />
         </button>
       </div>

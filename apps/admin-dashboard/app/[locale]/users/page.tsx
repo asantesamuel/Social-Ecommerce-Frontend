@@ -3,6 +3,22 @@
 import { useAdminUsers, useUpdateUserStatus } from '../../../hooks/useAdmin';
 import React, { useState } from 'react';
 
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+}
+
+interface UserPage {
+  data: User[];
+  page: number;
+  totalPages: number;
+  total: number;
+}
+
 export default function UsersManagementPage() {
   const [roleFilter, setRoleFilter] = useState<string>('');
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useAdminUsers(roleFilter);
@@ -11,7 +27,7 @@ export default function UsersManagementPage() {
   if (isLoading) return <div className="flex h-full items-center justify-center p-8 text-2xl font-black">FETCHING USERS...</div>;
   if (isError) return <div className="text-[#ff3b30] font-black text-2xl">FAILED TO FETCH USERS</div>;
 
-  const users = data?.pages.flatMap((page: any) => page.data) || [];
+  const users = data?.pages.flatMap((page: UserPage) => page.data) || [];
 
   const handleToggleStatus = (userId: string, currentStatus: boolean) => {
     if (confirm(`Are you sure you want to ${currentStatus ? 'suspend' : 'reactivate'} this user?`)) {
@@ -27,6 +43,7 @@ export default function UsersManagementPage() {
           <p className="text-gray-500 font-medium whitespace-nowrap">Control platform access and roles.</p>
         </div>
         <select 
+          aria-label='User Role Filter'
           value={roleFilter} 
           onChange={(e) => setRoleFilter(e.target.value)}
           className="bg-transparent border border-[#e4e4e7] dark:border-white/20 rounded-xl px-4 py-2 font-bold uppercase text-sm outline-none"
@@ -51,7 +68,7 @@ export default function UsersManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user: any) => (
+              {users.map((user: User) => (
                 <tr key={user.id} className="border-b border-[#f4f4f5] dark:border-white/10 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                   <td className="p-4 font-bold">{user.firstName} {user.lastName}</td>
                   <td className="p-4 text-gray-600 dark:text-gray-400 font-medium">{user.email}</td>

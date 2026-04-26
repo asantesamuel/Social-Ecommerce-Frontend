@@ -3,6 +3,18 @@
 import { useCart } from '../../../hooks/useCart';
 import { ArrowLeft, Minus, Plus, Trash2 } from 'lucide-react';
 import { Link } from '../../../i18n/routing';
+import Image from 'next/image';
+
+interface CartItem {
+  id: string;
+  quantity: number;
+  unitPrice: number;
+  productName?: string;
+  product?: {
+    name?: string;
+    imageUrls?: string[];
+  };
+}
 
 export default function CartPage() {
   const { cart, updateItem, removeItem, clearCart } = useCart();
@@ -38,7 +50,7 @@ export default function CartPage() {
               <Trash2 className="text-minimal-gray opacity-30" size={48} />
            </div>
            <h2 className="text-3xl font-black tracking-tight">Your cart is empty.</h2>
-           <p className="text-minimal-gray text-lg font-medium">Looks like you haven't added anything to your cart yet.</p>
+           <p className="text-minimal-gray text-lg font-medium">Looks like you have not added anything to your cart yet.</p>
            <Link href="/" className="mt-6 bg-foreground text-background px-10 py-4 rounded-xl font-bold hover:shadow-xl hover:-translate-y-1 transition-all active:scale-[0.98]">
               Start Shopping
            </Link>
@@ -46,10 +58,10 @@ export default function CartPage() {
       ) : (
         <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
           <div className="flex flex-col gap-6">
-            {items.map((item: any) => (
+            {items.map((item: CartItem) => (
               <div key={item.id} className="glass-card flex flex-col sm:flex-row gap-6 p-6 rounded-3xl shadow-sm hover:shadow-lg transition-shadow">
                 <div className="w-full sm:w-32 aspect-square bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 rounded-2xl flex-shrink-0 relative overflow-hidden mix-blend-multiply dark:mix-blend-normal">
-                   {item.product?.imageUrls?.[0] && <img src={item.product?.imageUrls?.[0]} className="w-full h-full object-cover" />}
+                   {item.product?.imageUrls?.[0] && <Image src={item.product?.imageUrls?.[0]} alt={item.productName || item.product?.name || 'Product Image'} fill className="object-cover" />}
                 </div>
                 <div className="flex-1 flex flex-col justify-center">
                   <div className="flex justify-between items-start mb-4">
@@ -58,11 +70,11 @@ export default function CartPage() {
                   </div>
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-black/5 dark:border-white/5">
                      <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 rounded-xl px-2 py-1">
-                        <button onClick={() => updateItem.mutate({ itemId: item.id, quantity: Math.max(1, item.quantity - 1) })} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg outline-none cursor-pointer disabled:opacity-50"><Minus size={16}/></button>
+                        <button aria-label="Decrease quantity" onClick={() => updateItem.mutate({ itemId: item.id, quantity: Math.max(1, item.quantity - 1) })} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg outline-none cursor-pointer disabled:opacity-50"><Minus size={16}/></button>
                         <span className="font-black text-base w-4 text-center">{item.quantity}</span>
-                        <button onClick={() => updateItem.mutate({ itemId: item.id, quantity: item.quantity + 1 })} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg outline-none cursor-pointer"><Plus size={16}/></button>
+                        <button aria-label="Increase quantity" onClick={() => updateItem.mutate({ itemId: item.id, quantity: item.quantity + 1 })} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg outline-none cursor-pointer"><Plus size={16}/></button>
                      </div>
-                     <button onClick={() => removeItem.mutate(item.id)} className="text-minimal-gray hover:text-minimal-red hover:bg-minimal-red/10 transition-colors p-3 rounded-xl cursor-pointer">
+                     <button aria-label="Remove item" onClick={() => removeItem.mutate(item.id)} className="text-minimal-gray hover:text-minimal-red hover:bg-minimal-red/10 transition-colors p-3 rounded-xl cursor-pointer">
                         <Trash2 size={20} />
                      </button>
                   </div>

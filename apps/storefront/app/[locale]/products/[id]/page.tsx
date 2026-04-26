@@ -6,6 +6,7 @@ import { useProduct } from '../../../../hooks/useCatalog';
 import { useCart } from '../../../../hooks/useCart';
 import { ArrowLeft, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { Link, useRouter } from '../../../../i18n/routing';
+import Image from 'next/image';
 
 export default function ProductDetail() {
   const params = useParams();
@@ -44,7 +45,7 @@ export default function ProductDetail() {
         <div className="flex flex-col gap-4 sticky top-32">
           <div className="w-full aspect-[4/5] bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 rounded-3xl overflow-hidden glass-card flex items-center justify-center p-0 shadow-sm border-0 border-transparent">
              {product.imageUrls?.[0] ? (
-                <img src={product.imageUrls[0]} alt={product.name} className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal hover:scale-105 transition-transform duration-700 ease-out" />
+                <Image src={product.imageUrls[0]} alt={product.name} className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal hover:scale-105 transition-transform duration-700 ease-out" />
              ) : (
                 <div className="text-minimal-gray font-bold tracking-widest uppercase opacity-50 text-xl">No Image</div>
              )}
@@ -65,9 +66,9 @@ export default function ProductDetail() {
 
           <div className="grid grid-cols-[140px_1fr] gap-4 mb-12">
              <div className="flex items-center justify-between glass-card !p-2 rounded-2xl shadow-sm">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-3 hover:bg-black/5 dark:hover:bg-white/10 rounded-xl transition-colors outline-none cursor-pointer"><Minus size={20} /></button>
+                <button aria-label="Decrease quantity" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-3 hover:bg-black/5 dark:hover:bg-white/10 rounded-xl transition-colors outline-none cursor-pointer"><Minus size={20} /></button>
                 <span className="font-black text-xl">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="p-3 hover:bg-black/5 dark:hover:bg-white/10 rounded-xl transition-colors outline-none cursor-pointer"><Plus size={20} /></button>
+                <button aria-label="Increase quantity" onClick={() => setQuantity(quantity + 1)} className="p-3 hover:bg-black/5 dark:hover:bg-white/10 rounded-xl transition-colors outline-none cursor-pointer"><Plus size={20} /></button>
              </div>
              
              <button 

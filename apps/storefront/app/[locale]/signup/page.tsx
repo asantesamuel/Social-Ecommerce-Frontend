@@ -110,6 +110,7 @@ export default function SignupPage() {
               <div>
                 <label className="text-sm font-medium mb-1 block">Est. Date</label>
                 <input 
+                  aria-label='Company Established Date'
                   type="date" 
                   required={isVendor}
                   value={companyEstablishedDate}

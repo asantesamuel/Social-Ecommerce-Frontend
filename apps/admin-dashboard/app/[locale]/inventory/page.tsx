@@ -3,6 +3,13 @@
 import { useAdminInventory } from '../../../hooks/useAdmin';
 import React, { useState } from 'react';
 
+interface InventoryAlert {
+  productId: string;
+  stockQuantity: number;
+  productName: string;
+  vendorName: string;
+}
+
 export default function InventoryAlertsPage() {
   const [threshold, setThreshold] = useState(10);
   const { data, isLoading, isError } = useAdminInventory(threshold);
@@ -22,6 +29,7 @@ export default function InventoryAlertsPage() {
         <div className="flex items-center gap-4">
           <label className="font-bold text-sm uppercase">Threshold:</label>
           <input 
+            aria-label='Inventory Threshold'
             type="number" 
             value={threshold} 
             onChange={(e) => setThreshold(Number(e.target.value))}
@@ -40,7 +48,7 @@ export default function InventoryAlertsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {alerts.map((alert: any) => (
+          {alerts.map((alert: InventoryAlert) => (
             <div key={alert.productId} className="glass-card shadow-2xl border-t-4 border-[#ff3b30] transition-transform hover:-translate-y-1">
               <div className="flex justify-between items-start mb-4">
                 <span className="text-xs font-black tracking-widest uppercase text-red-500 bg-red-500/10 px-2 py-1 rounded">Critically Low</span>
