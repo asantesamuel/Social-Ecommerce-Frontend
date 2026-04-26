@@ -3,17 +3,29 @@
 import { Link, usePathname, useRouter } from '../i18n/routing';
 import Cookies from 'js-cookie';
 import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@repo/api';
 
 export default function AdminLayout({ children, locale }: { children: React.ReactNode; locale: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const handleLogout = () => {
-    Cookies.remove('accessToken');
-    Cookies.remove('refreshToken');
-    queryClient.clear();
-    window.location.href = 'http://localhost:3000/en/login';
+  const handleLogout = async () => {
+    try {
+      const refreshToken = Cookies.get('refreshToken');
+      if (refreshToken) {
+        // Revoke the refresh token on the server so it can't be reused
+        await apiClient.post('/auth/logout', { refreshToken });
+      }
+    } catch {
+      // Proceed with client-side logout even if the server call fails
+    } finally {
+      Cookies.remove('accessToken');
+      Cookies.remove('refreshToken');
+      queryClient.clear();
+      // Redirect to the storefront login page (port 3001), not the API server (port 3000)
+      window.location.href = 'http://localhost:3001/en/login';
+    }
   };
 
   const navLinks = [
@@ -21,6 +33,7 @@ export default function AdminLayout({ children, locale }: { children: React.Reac
     { name: 'Users', href: `/users` },
     { name: 'Orders', href: `/orders` },
     { name: 'Inventory', href: `/inventory` },
+    { name: 'Vendors', href: `/vendors` },
     { name: 'Moderation', href: `/products` },
   ];
 

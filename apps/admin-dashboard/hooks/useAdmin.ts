@@ -96,3 +96,67 @@ export const useUpdateUserStatus = () => {
     },
   });
 };
+
+// ── Vendor Review Hooks ────────────────────────────────────────────────────────
+
+/** Paginated list of vendors whose status is pending_review */
+export const useAdminPendingVendors = () => {
+  return useInfiniteQuery({
+    queryKey: ['admin-pending-vendors'],
+    queryFn: async ({ pageParam = 1 }) => {
+      const { data } = await apiClient.get('/vendors/admin/pending', {
+        params: { page: pageParam, limit: 10 },
+      });
+      return data;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
+    },
+  });
+};
+
+/** Fetch all documents submitted by a specific vendor */
+export const useVendorDocuments = (vendorId: string) => {
+  return useQuery({
+    queryKey: ['vendor-documents', vendorId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/vendors/${vendorId}/documents`);
+      return data as Array<{
+        id: string;
+        documentType: string;
+        fileUrl: string;
+        verificationStatus: string;
+        uploadedAt: string;
+      }>;
+    },
+    enabled: !!vendorId,
+  });
+};
+
+/** Approve or reject a pending vendor application */
+export const useReviewVendor = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      vendorId,
+      action,
+      reason,
+    }: {
+      vendorId: string;
+      action: 'approve' | 'reject';
+      reason?: string;
+    }) => {
+      if (action === 'approve') {
+        const { data } = await apiClient.post(`/vendors/${vendorId}/approve`);
+        return data;
+      } else {
+        const { data } = await apiClient.post(`/vendors/${vendorId}/reject`, { reason });
+        return data;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-vendors'] });
+    },
+  });
+};
