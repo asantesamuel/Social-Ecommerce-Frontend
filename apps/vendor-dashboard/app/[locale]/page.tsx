@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
 import { usePathname, useSearchParams } from 'next/navigation';
+import Cookies from 'js-cookie';
 
 interface Category {
   id: string;
@@ -20,6 +21,15 @@ interface VendorProduct {
   imageUrls?: string[];
 }
 
+interface VendorProfile {
+  companyName: string;
+  status: string;
+  rejectionReason?: string | null;
+  canReapplyWithoutFee?: boolean;
+  requiresNewFee?: boolean;
+  reapplyDeadline?: string | null;
+}
+
 export default function VendorDashboardPage() {
   const queryClient = useQueryClient();
   const pathname = usePathname();
@@ -32,6 +42,7 @@ export default function VendorDashboardPage() {
   const [productMessage, setProductMessage] = useState<string | null>(null);
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
   const [isSyncingPayment, setIsSyncingPayment] = useState(false);
+  const [reapplyMessage, setReapplyMessage] = useState<string | null>(null);
   const [productForm, setProductForm] = useState({
     name: '',
     slug: '',
@@ -45,7 +56,7 @@ export default function VendorDashboardPage() {
   const paystackReturnDetected = Boolean(paymentReference);
 
   // Fetch vendor profile
-  const { data: vendor, isLoading, isError, refetch: refetchVendorProfile } = useQuery({
+  const { data: vendor, isLoading, isError, refetch: refetchVendorProfile } = useQuery<VendorProfile>({
     queryKey: ['vendorProfile'],
     queryFn: async () => {
       const { data } = await apiClient.get('/vendors/me');
@@ -123,6 +134,35 @@ export default function VendorDashboardPage() {
       if (data.fee?.paymentUrl) {
          window.location.href = data.fee.paymentUrl;
       }
+    }
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const refreshToken = Cookies.get('refreshToken');
+      if (refreshToken) {
+        await apiClient.post('/auth/logout', { refreshToken });
+      }
+    },
+    onSettled: () => {
+      Cookies.remove('accessToken');
+      Cookies.remove('refreshToken');
+      delete apiClient.defaults.headers.common.Authorization;
+      window.location.href = 'http://localhost:3001/en/login';
+    }
+  });
+
+  const reapplyMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post('/vendors/reapply');
+      return data;
+    },
+    onSuccess: (data) => {
+      setReapplyMessage(data.message || 'Vendor application updated.');
+      queryClient.invalidateQueries({ queryKey: ['vendorProfile'] });
+    },
+    onError: (error: any) => {
+      setReapplyMessage(error?.response?.data?.message || error?.message || 'Unable to update vendor application.');
     }
   });
 
@@ -275,7 +315,8 @@ export default function VendorDashboardPage() {
   if (isLoading) return <div className="flex h-screen items-center justify-center p-8 text-2xl font-black">LOADING COMMAND CENTER...</div>;
   if (isError) return <div className="flex flex-col items-center justify-center p-8 text-[#ff3b30]"><h2 className="text-4xl font-black">UNAUTHORIZED</h2><p className="mt-4 text-minimal-gray">No vendor profile found for this user.</p></div>
 
-  const status = vendor?.status;
+  const vendorProfile = vendor as VendorProfile;
+  const status = vendorProfile.status;
 
   return (
     <div className="min-h-screen bg-[#fafafa] p-8 lg:p-16">
@@ -318,12 +359,19 @@ export default function VendorDashboardPage() {
         <header className="flex justify-between items-center glass-card p-6 shadow-sm">
           <div>
             <h1 className="text-3xl font-black text-[#111] uppercase tracking-tighter">Command Center</h1>
-            <p className="text-minimal-gray font-medium">{vendor.companyName}</p>
+            <p className="text-minimal-gray font-medium">{vendorProfile.companyName}</p>
           </div>
-          <div>
+          <div className="flex items-center gap-3">
              <span className="font-bold py-2 px-4 rounded-full bg-[#111] text-white uppercase text-xs tracking-wider">
                STATUS: {status}
              </span>
+             <button
+               onClick={() => logoutMutation.mutate()}
+               disabled={logoutMutation.isPending}
+               className="py-2 px-4 rounded-full border border-[#e4e4e7] bg-white text-[#111] uppercase text-xs font-bold tracking-wider hover:bg-[#f4f4f5] transition-colors disabled:opacity-50"
+             >
+               {logoutMutation.isPending ? 'Signing Out...' : 'Logout'}
+             </button>
           </div>
         </header>
 
@@ -402,6 +450,55 @@ export default function VendorDashboardPage() {
                  <p className="mt-4 text-sm font-medium text-minimal-gray">{uploadMessage}</p>
                )}
              </div>
+          </div>
+        )}
+
+        {status === 'rejected' && (
+          <div className="grid lg:grid-cols-2 gap-8">
+            <div className="glass-card shadow-sm p-8 border-l-[8px] border-[#ff3b30]">
+              <h2 className="text-3xl font-black uppercase tracking-tighter text-[#111] mb-4">Application Rejected</h2>
+              <p className="text-minimal-gray font-medium text-lg mb-6">
+                Your vendor application was reviewed and needs changes before it can be approved.
+              </p>
+              <div className="bg-[#fafafa] border border-[#f1f1f1] rounded-2xl p-5">
+                <p className="text-xs font-black uppercase tracking-widest text-[#777] mb-2">Rejection Reason</p>
+                <p className="text-[#111] font-medium leading-relaxed">
+                  {vendorProfile.rejectionReason || 'No rejection reason was provided.'}
+                </p>
+              </div>
+              {vendorProfile.reapplyDeadline && (
+                <p className="mt-5 text-sm font-medium text-minimal-gray">
+                  Reapply window: <strong className="text-[#111]">{new Date(vendorProfile.reapplyDeadline).toLocaleDateString()}</strong>
+                </p>
+              )}
+            </div>
+
+            <div className="glass-card p-8 bg-white border border-[#eaeaea]">
+              <h3 className="text-xl font-bold uppercase tracking-tight mb-4">
+                {vendorProfile.canReapplyWithoutFee ? 'Reopen Application' : 'Restart Application'}
+              </h3>
+              <p className="text-sm font-medium text-minimal-gray mb-6">
+                {vendorProfile.canReapplyWithoutFee
+                  ? 'You are still inside the three-month reapply window, so you can continue without paying the onboarding fee again.'
+                  : 'Your three-month reapply window has expired. Restarting will move your application back to payment so you can pay the onboarding fee again.'}
+              </p>
+
+              <button
+                onClick={() => reapplyMutation.mutate()}
+                disabled={reapplyMutation.isPending}
+                className="w-full py-4 btn-dopamine text-lg text-white disabled:opacity-50"
+              >
+                {reapplyMutation.isPending
+                  ? 'Updating Application...'
+                  : vendorProfile.canReapplyWithoutFee
+                    ? 'Reapply Without Paying Again'
+                    : 'Restart And Return To Payment'}
+              </button>
+
+              {reapplyMessage && (
+                <p className="mt-4 text-sm font-medium text-minimal-gray">{reapplyMessage}</p>
+              )}
+            </div>
           </div>
         )}
 
