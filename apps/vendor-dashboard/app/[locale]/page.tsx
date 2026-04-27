@@ -3,12 +3,38 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
-import { useRouter } from 'next/navigation';
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface VendorProduct {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  stockQuantity: number;
+  approvalStatus: string;
+  imageUrls?: string[];
+}
 
 export default function VendorDashboardPage() {
   const queryClient = useQueryClient();
   const [currency, setCurrency] = useState('GHS');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [documentType, setDocumentType] = useState<'business_registration' | 'tax_certificate' | 'id_proof' | 'other'>('business_registration');
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [productImage, setProductImage] = useState<File | null>(null);
+  const [productMessage, setProductMessage] = useState<string | null>(null);
+  const [productForm, setProductForm] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    price: '',
+    stockQuantity: '',
+    categoryId: ''
+  });
 
   // Fetch vendor profile
   const { data: vendor, isLoading, isError } = useQuery({
@@ -18,6 +44,26 @@ export default function VendorDashboardPage() {
       return data;
     },
     retry: false
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['vendor-categories'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/categories');
+      return data as Category[];
+    },
+    enabled: vendor?.status === 'approved'
+  });
+
+  const { data: vendorProducts } = useQuery({
+    queryKey: ['vendor-products'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/products/vendor/my-products', {
+        params: { limit: 20 }
+      });
+      return data;
+    },
+    enabled: vendor?.status === 'approved'
   });
 
   const payFeeMutation = useMutation({
@@ -34,20 +80,149 @@ export default function VendorDashboardPage() {
 
   const uploadDocMutation = useMutation({
      mutationFn: async () => {
-       if (!selectedFile) return;
-       // Simulating S3 upload by assuming it works and just sending a mock fileKey
-       const fileKey = `docs/${Date.now()}_${selectedFile.name}`;
+       if (!selectedFile) {
+         throw new Error('Please select a document to upload.');
+       }
+
+       const contentType = selectedFile.type || 'application/octet-stream';
+
+       const presignResponse = await apiClient.post('/uploads/presign', {
+         filename: selectedFile.name,
+         contentType,
+         fileSize: selectedFile.size,
+         folder: 'documents'
+       });
+
+       const { uploadUrl, fileKey } = presignResponse.data;
+
+       const uploadResponse = await fetch(uploadUrl, {
+         method: 'PUT',
+         headers: {
+           'Content-Type': contentType
+         },
+         body: selectedFile
+       });
+
+       if (!uploadResponse.ok) {
+         throw new Error('Upload to storage failed. Please try again.');
+       }
+
+       await apiClient.post('/uploads/confirm', {
+         fileKey,
+         folder: 'documents'
+       });
+
        const { data } = await apiClient.post('/vendors/documents', {
          fileKey,
-         documentType: 'business_registration'
+         documentType
        });
        return data;
      },
      onSuccess: () => {
-       alert("Document Uploaded!");
+       setUploadMessage('Document uploaded successfully and submitted for review.');
        setSelectedFile(null);
+       queryClient.invalidateQueries({ queryKey: ['vendorProfile'] });
+     },
+     onError: (error: any) => {
+       setUploadMessage(error?.message || 'Document upload failed.');
      }
   });
+
+  const createProductMutation = useMutation({
+    mutationFn: async () => {
+      let imageUrls: string[] = [];
+
+      if (productImage) {
+        const contentType = productImage.type || 'application/octet-stream';
+        const presignResponse = await apiClient.post('/uploads/presign', {
+          filename: productImage.name,
+          contentType,
+          fileSize: productImage.size,
+          folder: 'products'
+        });
+
+        const { uploadUrl, fileKey } = presignResponse.data;
+
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': contentType
+          },
+          body: productImage
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Product image upload failed.');
+        }
+
+        const confirmResponse = await apiClient.post('/uploads/confirm', {
+          fileKey,
+          folder: 'products'
+        });
+
+        imageUrls = [confirmResponse.data.url];
+      }
+
+      const payload = {
+        name: productForm.name.trim(),
+        slug: productForm.slug.trim(),
+        description: productForm.description.trim(),
+        price: Number(productForm.price),
+        stockQuantity: Number(productForm.stockQuantity),
+        categoryId: productForm.categoryId || undefined,
+        imageUrls
+      };
+
+      const { data } = await apiClient.post('/products', payload);
+      return data;
+    },
+    onSuccess: () => {
+      setProductMessage('Product created and sent for review.');
+      setProductImage(null);
+      setProductForm({
+        name: '',
+        slug: '',
+        description: '',
+        price: '',
+        stockQuantity: '',
+        categoryId: ''
+      });
+      queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
+    },
+    onError: (error: any) => {
+      setProductMessage(error?.response?.data?.message || error?.message || 'Product creation failed.');
+    }
+  });
+
+  const handleProductFieldChange = (field: string, value: string) => {
+    setProductForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleNameChange = (value: string) => {
+    setProductForm((current) => {
+      const nextName = value;
+      const nextSlug = current.slug === '' || current.slug === current.name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        ? nextName
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+        : current.slug;
+
+      return {
+        ...current,
+        name: nextName,
+        slug: nextSlug
+      };
+    });
+  };
 
   if (isLoading) return <div className="flex h-screen items-center justify-center p-8 text-2xl font-black">LOADING COMMAND CENTER...</div>;
   if (isError) return <div className="flex flex-col items-center justify-center p-8 text-[#ff3b30]"><h2 className="text-4xl font-black">UNAUTHORIZED</h2><p className="mt-4 text-minimal-gray">No vendor profile found for this user.</p></div>
@@ -105,10 +280,25 @@ export default function VendorDashboardPage() {
              <div className="glass-card p-8 bg-white border border-[#eaeaea]">
                <h3 className="text-xl font-bold uppercase tracking-tight mb-6">Upload Verification Doc</h3>
                <p className="text-sm font-medium text-minimal-gray mb-6">Must be Business Registration or ID proof.</p>
+
+               <select
+                 value={documentType}
+                 onChange={(e) => setDocumentType(e.target.value as 'business_registration' | 'tax_certificate' | 'id_proof' | 'other')}
+                 className="w-full bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none font-medium mb-4"
+               >
+                 <option value="business_registration">Business Registration</option>
+                 <option value="tax_certificate">Tax Certificate</option>
+                 <option value="id_proof">ID Proof</option>
+                 <option value="other">Other</option>
+               </select>
                
                <input 
                  type="file" 
-                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                 accept=".pdf,.doc,.docx,image/jpeg,image/png"
+                 onChange={(e) => {
+                   setSelectedFile(e.target.files?.[0] || null);
+                   setUploadMessage(null);
+                 }}
                  className="block w-full text-sm text-slate-500 mb-6
                    file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold
                    file:bg-black file:text-white file:cursor-pointer transition-all border border-[#e4e4e7] rounded-xl py-4 px-4 bg-gray-50"
@@ -121,20 +311,158 @@ export default function VendorDashboardPage() {
                >
                  {uploadDocMutation.isPending ? 'Uploading...' : 'Submit Document'}
                </button>
+
+               {uploadMessage && (
+                 <p className="mt-4 text-sm font-medium text-minimal-gray">{uploadMessage}</p>
+               )}
              </div>
           </div>
         )}
 
         {/* APPROVED DASHBOARD */}
         {status === 'approved' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
-            <div className="glass-card p-10 cursor-pointer group hover:-translate-y-2 transition-all shadow-md">
-              <h3 className="text-2xl font-black uppercase text-black group-hover:text-[#ff3b30] transition-colors mb-2">Inventory Sync</h3>
-              <p className="text-[#888] font-medium font-sm">Manage your drops, edit specs, and control supply chains.</p>
+          <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-8 mt-4">
+            <div className="glass-card p-8 shadow-md">
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <h3 className="text-2xl font-black uppercase text-black tracking-tight">Create Product</h3>
+                  <p className="text-[#888] font-medium text-sm">Upload the product image first, then save the listing.</p>
+                </div>
+                <span className="text-[10px] font-bold uppercase px-3 py-2 rounded-full bg-[#111] text-white tracking-wider">REAL UPLOAD FLOW</span>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <input
+                  value={productForm.name}
+                  onChange={(e) => {
+                    handleNameChange(e.target.value);
+                    setProductMessage(null);
+                  }}
+                  placeholder="Product name"
+                  className="bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none font-medium"
+                />
+                <input
+                  value={productForm.slug}
+                  onChange={(e) => {
+                    handleProductFieldChange('slug', e.target.value.toLowerCase());
+                    setProductMessage(null);
+                  }}
+                  placeholder="product-slug"
+                  className="bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none font-medium"
+                />
+                <input
+                  value={productForm.price}
+                  onChange={(e) => {
+                    handleProductFieldChange('price', e.target.value);
+                    setProductMessage(null);
+                  }}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Price"
+                  className="bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none font-medium"
+                />
+                <input
+                  value={productForm.stockQuantity}
+                  onChange={(e) => {
+                    handleProductFieldChange('stockQuantity', e.target.value);
+                    setProductMessage(null);
+                  }}
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Stock quantity"
+                  className="bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none font-medium"
+                />
+                <select
+                  value={productForm.categoryId}
+                  onChange={(e) => {
+                    handleProductFieldChange('categoryId', e.target.value);
+                    setProductMessage(null);
+                  }}
+                  className="bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none font-medium md:col-span-2"
+                >
+                  <option value="">No Category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+                <textarea
+                  value={productForm.description}
+                  onChange={(e) => {
+                    handleProductFieldChange('description', e.target.value);
+                    setProductMessage(null);
+                  }}
+                  placeholder="Product description"
+                  className="bg-[#f4f4f5] border border-[#e4e4e7] rounded-xl px-4 py-4 outline-none font-medium min-h-32 md:col-span-2 resize-y"
+                />
+                <div className="md:col-span-2">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => {
+                      setProductImage(e.target.files?.[0] || null);
+                      setProductMessage(null);
+                    }}
+                    className="block w-full text-sm text-slate-500
+                      file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold
+                      file:bg-black file:text-white file:cursor-pointer transition-all border border-[#e4e4e7] rounded-xl py-4 px-4 bg-gray-50"
+                  />
+                  <p className="mt-3 text-xs text-minimal-gray font-medium">Accepted: JPEG, PNG, WEBP. Image upload is verified before the product is stored.</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => createProductMutation.mutate()}
+                disabled={
+                  createProductMutation.isPending ||
+                  !productForm.name.trim() ||
+                  !productForm.slug.trim() ||
+                  productForm.price === '' ||
+                  productForm.stockQuantity === ''
+                }
+                className="w-full mt-6 py-4 btn-dopamine text-lg text-white disabled:opacity-50"
+              >
+                {createProductMutation.isPending ? 'Uploading and Saving...' : 'Create Product'}
+              </button>
+
+              {productMessage && (
+                <p className="mt-4 text-sm font-medium text-minimal-gray">{productMessage}</p>
+              )}
             </div>
-            <div className="glass-card p-10 cursor-pointer group hover:-translate-y-2 transition-all shadow-md">
-              <h3 className="text-2xl font-black uppercase text-black group-hover:text-[#ff3b30] transition-colors mb-2">Order Matrix</h3>
-              <p className="text-[#888] font-medium font-sm">Fulfill demands. Track logistics. Monitor revenue streams.</p>
+
+            <div className="glass-card p-8 shadow-md">
+              <div className="mb-6">
+                <h3 className="text-2xl font-black uppercase text-black tracking-tight">Your Products</h3>
+                <p className="text-[#888] font-medium text-sm">These entries now only save image URLs that came through the verified upload path.</p>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {(vendorProducts?.data as VendorProduct[] | undefined)?.map((product) => (
+                  <div key={product.id} className="border border-[#f4f4f5] rounded-2xl p-4 bg-[#fafafa]">
+                    <div className="flex items-start gap-4">
+                      <div className="w-20 h-20 rounded-2xl bg-[#f4f4f5] overflow-hidden flex-shrink-0">
+                        {product.imageUrls?.[0] ? (
+                          <img src={product.imageUrls[0]} alt={product.name} className="w-full h-full object-cover" />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="font-black text-lg tracking-tight">{product.name}</h4>
+                            <p className="text-sm text-minimal-gray font-medium">{product.slug}</p>
+                          </div>
+                          <span className="text-[10px] font-bold uppercase px-3 py-2 rounded-full bg-black text-white tracking-wider">{product.approvalStatus}</span>
+                        </div>
+                        <div className="flex gap-6 mt-4 text-sm font-bold text-[#555]">
+                          <span>${Number(product.price).toFixed(2)}</span>
+                          <span>{product.stockQuantity} in stock</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )) || <p className="text-sm text-minimal-gray font-medium">No products yet.</p>}
+              </div>
             </div>
           </div>
         )}

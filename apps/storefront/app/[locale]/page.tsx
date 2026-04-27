@@ -41,7 +41,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="bento-grid gap-6 p-0">
-            {productsData?.data?.items?.map((product: any) => (
+            {productsData?.data?.map((product: any) => (
               <Link href={`/products/${product.id}`} key={product.id} className="bento-item glass-card group flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-xl shadow-sm rounded-3xl p-5">
                 <div className="w-full aspect-square bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 rounded-2xl mb-6 overflow-hidden relative">
                    {product.imageUrls?.[0] ? (
