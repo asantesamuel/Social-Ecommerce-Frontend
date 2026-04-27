@@ -30,6 +30,14 @@ const redirectToSharedLogin = () => {
   window.location.href = `http://localhost:3001/${locale}/login`;
 };
 
+const isAuthRequest = (url?: string): boolean => {
+  if (!url) {
+    return false;
+  }
+
+  return url.startsWith('/auth/') || url.includes('/auth/');
+};
+
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -44,6 +52,13 @@ const processQueue = (error: any, token: string | null = null) => {
 // Request Interceptor
 apiClient.interceptors.request.use(
   (config) => {
+    if (isAuthRequest(config.url)) {
+      if (config.headers) {
+        delete config.headers.Authorization;
+      }
+      return config;
+    }
+
     const token = Cookies.get('accessToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -58,8 +73,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const authRequest = isAuthRequest(originalRequest?.url);
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !authRequest) {
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
