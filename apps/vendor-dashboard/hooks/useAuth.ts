@@ -13,8 +13,8 @@ export const useAuth = () => {
       return data;
     },
     onSuccess: (data) => {
-      Cookies.set('accessToken', data.accessToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
-      Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
+      Cookies.set('accessToken', data.accessToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
+      Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
       apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
       queryClient.invalidateQueries();
       
@@ -22,7 +22,7 @@ export const useAuth = () => {
       if (role === 'admin') {
         window.location.href = 'http://localhost:3002';
       } else if (role === 'vendor') {
-        window.location.href = 'http://localhost:3003';
+        window.location.href = 'http://localhost:3003/en';
       } else {
         router.push('/');
       }
@@ -35,8 +35,8 @@ export const useAuth = () => {
       return data;
     },
     onSuccess: (data) => {
-      Cookies.set('accessToken', data.accessToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
-      Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
+      Cookies.set('accessToken', data.accessToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
+      Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
       apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
       queryClient.invalidateQueries();
       
@@ -44,7 +44,7 @@ export const useAuth = () => {
       if (role === 'admin') {
         window.location.href = 'http://localhost:3002';
       } else if (role === 'vendor') {
-        window.location.href = 'http://localhost:3003';
+        window.location.href = 'http://localhost:3003/en';
       } else {
         router.push('/');
       }

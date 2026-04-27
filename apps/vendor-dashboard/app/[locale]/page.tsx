@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 interface Category {
   id: string;
@@ -21,12 +22,16 @@ interface VendorProduct {
 
 export default function VendorDashboardPage() {
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [currency, setCurrency] = useState('GHS');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState<'business_registration' | 'tax_certificate' | 'id_proof' | 'other'>('business_registration');
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [productImage, setProductImage] = useState<File | null>(null);
   const [productMessage, setProductMessage] = useState<string | null>(null);
+  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
+  const [isSyncingPayment, setIsSyncingPayment] = useState(false);
   const [productForm, setProductForm] = useState({
     name: '',
     slug: '',
@@ -36,8 +41,11 @@ export default function VendorDashboardPage() {
     categoryId: ''
   });
 
+  const paymentReference = searchParams.get('reference') || searchParams.get('trxref');
+  const paystackReturnDetected = Boolean(paymentReference);
+
   // Fetch vendor profile
-  const { data: vendor, isLoading, isError } = useQuery({
+  const { data: vendor, isLoading, isError, refetch: refetchVendorProfile } = useQuery({
     queryKey: ['vendorProfile'],
     queryFn: async () => {
       const { data } = await apiClient.get('/vendors/me');
@@ -45,6 +53,43 @@ export default function VendorDashboardPage() {
     },
     retry: false
   });
+
+  const dashboardCallbackUrl = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    return `${window.location.origin}${pathname}`;
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!paystackReturnDetected) {
+      return;
+    }
+
+    setPaymentMessage('Payment received. Syncing your vendor status...');
+    setIsSyncingPayment(true);
+
+    const interval = window.setInterval(async () => {
+      const result = await refetchVendorProfile();
+      const nextStatus = result.data?.status;
+
+      if (nextStatus && nextStatus !== 'pending_payment') {
+        setPaymentMessage(
+          nextStatus === 'pending_review'
+            ? 'Payment confirmed. You can now upload your verification documents.'
+            : 'Payment confirmed and dashboard refreshed.'
+        );
+        setIsSyncingPayment(false);
+        window.clearInterval(interval);
+      }
+    }, 2500);
+
+    return () => {
+      setIsSyncingPayment(false);
+      window.clearInterval(interval);
+    };
+  }, [paystackReturnDetected, refetchVendorProfile]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['vendor-categories'],
@@ -68,7 +113,10 @@ export default function VendorDashboardPage() {
 
   const payFeeMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await apiClient.post('/vendors/pay-fee', { currency, callbackUrl: window.location.href });
+      const { data } = await apiClient.post('/vendors/pay-fee', {
+        currency,
+        callbackUrl: dashboardCallbackUrl
+      });
       return data;
     },
     onSuccess: (data) => {
@@ -232,6 +280,41 @@ export default function VendorDashboardPage() {
   return (
     <div className="min-h-screen bg-[#fafafa] p-8 lg:p-16">
       <div className="max-w-6xl mx-auto flex flex-col gap-8">
+        {paystackReturnDetected && (
+          <div className="glass-card border-l-[8px] border-[#111] p-6 lg:p-8 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isSyncingPayment ? 'bg-[#111] text-white' : 'bg-[#ecfdf3] text-[#027a48]'}`}>
+                  {isSyncingPayment ? (
+                    <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span className="text-xl font-black">OK</span>
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-xl lg:text-2xl font-black uppercase tracking-tight text-[#111]">
+                    {isSyncingPayment ? 'Payment Confirmed, Syncing Status' : 'Payment Confirmed'}
+                  </h2>
+                  <p className="text-sm lg:text-base text-minimal-gray font-medium mt-1">
+                    {paymentMessage || 'We are updating your vendor access so you can continue onboarding.'}
+                  </p>
+                  {paymentReference && (
+                    <p className="text-xs font-bold uppercase tracking-wider text-[#777] mt-3">
+                      Reference: {paymentReference}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="lg:text-right">
+                <div className={`inline-flex items-center gap-2 px-4 py-3 rounded-full text-xs font-black uppercase tracking-widest ${isSyncingPayment ? 'bg-black text-white' : 'bg-[#ecfdf3] text-[#027a48]'}`}>
+                  <span className={`w-2.5 h-2.5 rounded-full ${isSyncingPayment ? 'bg-white animate-pulse' : 'bg-[#12b76a]'}`} />
+                  {isSyncingPayment ? 'Updating Access' : 'Ready To Continue'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <header className="flex justify-between items-center glass-card p-6 shadow-sm">
           <div>
             <h1 className="text-3xl font-black text-[#111] uppercase tracking-tighter">Command Center</h1>
@@ -249,6 +332,9 @@ export default function VendorDashboardPage() {
           <div className="glass-card shadow-2xl border-l-[8px] border-[#ff3b30] p-8 lg:p-12 mb-8 mt-12 max-w-2xl mx-auto">
             <h2 className="text-4xl justify-center text-center font-black mb-4 uppercase tracking-tighter">Access Denied</h2>
             <p className="text-[#555] font-medium text-center mb-10 text-lg">Your onboarding fee must be cleared before you can unlock the command center.</p>
+            {paymentMessage && (
+              <p className="text-center text-sm font-bold text-[#111] mb-6">{paymentMessage}</p>
+            )}
             <div className="flex flex-col gap-4">
               <select 
                  value={currency} 

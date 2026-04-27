@@ -16,11 +16,12 @@ export function proxy(req: NextRequest) {
 
   // If there's no auth token, redirect to login
   if (!hasToken && !isAuthPage) {
-    // If we're at the root, Next-Intl redirects to /en automatically. We just force /en/login
-    // Alternatively, let Next-Intl dictate the locale and insert /login
     const localeMatch = url.pathname.match(/^\/(en|es|fr)/);
     const locale = localeMatch ? localeMatch[1] : 'en';
-    
+
+    url.protocol = 'http:';
+    url.hostname = 'localhost';
+    url.port = '3001';
     url.pathname = `/${locale}/login`;
     return NextResponse.redirect(url);
   }

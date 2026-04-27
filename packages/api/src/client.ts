@@ -83,8 +83,8 @@ apiClient.interceptors.response.use(
         const newAccessToken = data.accessToken;
         const newRefreshToken = data.refreshToken;
 
-        Cookies.set('accessToken', newAccessToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
-        Cookies.set('refreshToken', newRefreshToken, { secure: window.location.protocol === 'https:', sameSite: 'strict' });
+        Cookies.set('accessToken', newAccessToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
+        Cookies.set('refreshToken', newRefreshToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
 
         apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
