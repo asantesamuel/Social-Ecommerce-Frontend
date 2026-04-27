@@ -16,6 +16,20 @@ let failedQueue: Array<{
   reject: (reason?: any) => void;
 }> = [];
 
+const getLocaleFromPath = (pathname: string): string => {
+  const match = pathname.match(/^\/(en|es|fr)(\/|$)/);
+  return match?.[1] ?? 'en';
+};
+
+const redirectToSharedLogin = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const locale = getLocaleFromPath(window.location.pathname);
+  window.location.href = `http://localhost:3001/${locale}/login`;
+};
+
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -70,7 +84,7 @@ apiClient.interceptors.response.use(
         Cookies.remove('accessToken');
         Cookies.remove('refreshToken');
         if (!isAuthPage) {
-            window.location.href = '/login';
+            redirectToSharedLogin();
         }
         return Promise.reject(error);
       }
@@ -97,7 +111,7 @@ apiClient.interceptors.response.use(
         Cookies.remove('accessToken');
         Cookies.remove('refreshToken');
         if (!isAuthPage) {
-            window.location.href = '/login';
+            redirectToSharedLogin();
         }
         return Promise.reject(refreshError);
       } finally {

@@ -20,9 +20,9 @@ export const useAuth = () => {
       
       const role = data.user?.role;
       if (role === 'admin') {
-        window.location.href = 'http://localhost:3002';
+        window.location.href = 'http://localhost:3002/en';
       } else if (role === 'vendor') {
-        window.location.href = 'http://localhost:3003';
+        window.location.href = 'http://localhost:3003/en';
       } else {
         router.push('/');
       }
@@ -42,9 +42,9 @@ export const useAuth = () => {
       
       const role = data.user?.role;
       if (role === 'admin') {
-        window.location.href = 'http://localhost:3002';
+        window.location.href = 'http://localhost:3002/en';
       } else if (role === 'vendor') {
-        window.location.href = 'http://localhost:3003';
+        window.location.href = 'http://localhost:3003/en';
       } else {
         router.push('/');
       }
