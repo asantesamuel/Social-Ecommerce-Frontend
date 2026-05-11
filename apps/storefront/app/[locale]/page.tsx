@@ -1,8 +1,23 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element -- Catalog images come from dynamic upload URLs. */
+
 import { useProducts, useCategories } from '../../hooks/useCatalog';
 import { useTranslations } from 'next-intl';
 import { Link } from '../../i18n/routing';
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrls?: string[];
+}
 
 export default function Home() {
   const t = useTranslations('Index');
@@ -24,7 +39,7 @@ export default function Home() {
           {cLoad ? (
             <div className="h-14 w-40 bg-black/5 dark:bg-white/10 rounded-2xl animate-pulse" />
           ) : (
-            categoriesData?.map((cat: any) => (
+            (categoriesData as Category[] | undefined)?.map((cat) => (
               <button key={cat.id} className="whitespace-nowrap px-8 py-4 rounded-[24px] bg-white border border-[#f4f4f5] shadow-md font-black tracking-widest uppercase hover:bg-[#ff3b30] hover:text-white text-[#111] transition-all cursor-pointer hover:-translate-y-1">
                 {cat.name}
               </button>
@@ -41,7 +56,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="bento-grid gap-6 p-0">
-            {productsData?.data?.map((product: any) => (
+            {(productsData?.data as Product[] | undefined)?.map((product) => (
               <Link href={`/products/${product.id}`} key={product.id} className="bento-item glass-card group flex flex-col cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-xl shadow-sm rounded-3xl p-5">
                 <div className="w-full aspect-square bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 rounded-2xl mb-6 overflow-hidden relative">
                    {product.imageUrls?.[0] ? (

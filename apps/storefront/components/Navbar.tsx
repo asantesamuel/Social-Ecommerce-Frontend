@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link, usePathname, useRouter } from '../i18n/routing';
 import { useCart } from '../hooks/useCart';
 import Cookies from 'js-cookie';
+import { apiClient } from '@repo/api';
 
 export default function Navbar() {
   const { cart } = useCart();
@@ -17,11 +18,21 @@ export default function Navbar() {
     router.replace(pathname, { locale });
   };
 
-  const handleLogout = () => {
-    Cookies.remove('accessToken');
-    Cookies.remove('refreshToken');
-    queryClient.clear();
-    router.replace('/login');
+  const handleLogout = async () => {
+    try {
+      const refreshToken = Cookies.get('refreshToken');
+      if (refreshToken) {
+        await apiClient.post('/auth/logout', { refreshToken });
+      }
+    } catch {
+      // Continue local logout even if the server cannot be reached.
+    } finally {
+      Cookies.remove('accessToken');
+      Cookies.remove('refreshToken');
+      delete apiClient.defaults.headers.common.Authorization;
+      queryClient.clear();
+      router.replace('/login');
+    }
   };
 
   const cartItemCount = cart.data?.items?.length || 0;

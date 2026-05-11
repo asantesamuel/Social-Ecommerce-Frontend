@@ -2,13 +2,28 @@
 
 import { useAdminAnalytics } from '../../hooks/useAdmin';
 
+interface RecentOrder {
+  id: string;
+  customer: string;
+  placedAt: string;
+  total: number;
+  status: string;
+}
+
+interface TopProduct {
+  productId: string;
+  productName: string;
+  revenue: number;
+  totalSold: number;
+}
+
 export default function AdminOverview() {
   const { data, isLoading, isError } = useAdminAnalytics();
 
   if (isLoading) return <div className="flex h-full items-center justify-center p-8 text-2xl font-black">SYNCING OVERVIEW...</div>;
   if (isError) return <div className="text-[#ff3b30] font-black text-2xl">FAILED TO FETCH ANALYTICS</div>;
 
-  const { overview, orders, recentOrders, topProducts } = data;
+  const { overview, recentOrders, topProducts } = data;
 
   return (
     <div className="flex flex-col gap-8">
@@ -42,7 +57,7 @@ export default function AdminOverview() {
         <div className="glass-card">
           <h3 className="text-xl font-bold uppercase tracking-tighter mb-6">Recent Orders</h3>
           <div className="flex flex-col gap-4">
-            {recentOrders.map((order: any) => (
+            {(recentOrders as RecentOrder[]).map((order) => (
               <div key={order.id} className="flex justify-between items-center py-2 border-b border-[#f4f4f5] dark:border-white/10 last:border-0">
                 <div>
                   <p className="font-bold">{order.customer}</p>
@@ -62,7 +77,7 @@ export default function AdminOverview() {
         <div className="glass-card flex flex-col">
           <h3 className="text-xl font-bold uppercase tracking-tighter mb-6">Top Performers</h3>
           <div className="flex flex-col gap-4 flex-1">
-            {topProducts.map((p: any, i: number) => (
+            {(topProducts as TopProduct[]).map((p, i) => (
               <div key={p.productId} className="flex justify-between items-center py-2 border-b border-[#f4f4f5] dark:border-white/10 last:border-0">
                 <div className="flex items-center gap-4">
                   <span className="text-2xl font-black text-gray-300 dark:text-gray-600">0{i + 1}</span>

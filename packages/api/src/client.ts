@@ -13,7 +13,7 @@ export const apiClient = axios.create({
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
 }> = [];
 
 const getLocaleFromPath = (pathname: string): string => {
@@ -38,7 +38,7 @@ const isAuthRequest = (url?: string): boolean => {
   return url.startsWith('/auth/') || url.includes('/auth/');
 };
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -73,6 +73,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
     const authRequest = isAuthRequest(originalRequest?.url);
 
     if (error.response?.status === 401 && !originalRequest._retry && !authRequest) {
@@ -81,7 +85,9 @@ apiClient.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            originalRequest.headers.Authorization = 'Bearer ' + token;
+            if (token && originalRequest.headers) {
+              originalRequest.headers.Authorization = 'Bearer ' + token;
+            }
             return apiClient(originalRequest);
           })
           .catch((err) => {

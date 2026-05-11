@@ -1,13 +1,12 @@
 'use client';
 
-import { Link, usePathname, useRouter } from '../i18n/routing';
+import { Link, usePathname } from '../i18n/routing';
 import Cookies from 'js-cookie';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
 
 export default function AdminLayout({ children, locale }: { children: React.ReactNode; locale: string }) {
   const pathname = usePathname();
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const handleLogout = async () => {
@@ -24,7 +23,7 @@ export default function AdminLayout({ children, locale }: { children: React.Reac
       Cookies.remove('refreshToken');
       queryClient.clear();
       // Redirect to the storefront login page (port 3001), not the API server (port 3000)
-      window.location.href = 'http://localhost:3001/en/login';
+      window.location.href = `http://localhost:3001/${locale}/login`;
     }
   };
 

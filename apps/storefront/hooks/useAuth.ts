@@ -3,12 +3,21 @@ import { apiClient } from '@repo/api';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 
+type AuthCredentials = {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  companyName?: string;
+};
+
 export const useAuth = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: any) => {
+    mutationFn: async (credentials: AuthCredentials) => {
       const { data } = await apiClient.post('/auth/login', credentials);
       return data;
     },
@@ -30,7 +39,7 @@ export const useAuth = () => {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials: any) => {
+    mutationFn: async (credentials: AuthCredentials) => {
       const { data } = await apiClient.post('/auth/register', credentials);
       return data;
     },

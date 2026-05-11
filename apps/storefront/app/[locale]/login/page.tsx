@@ -66,7 +66,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center text-sm text-minimal-gray flex flex-col gap-3">
-          <span>Don't have an account?</span>
+          <span>Don&apos;t have an account?</span>
           <div className="flex justify-center gap-6">
             <Link href="/signup" className="text-minimal-red hover:underline font-semibold transition-all">Sign up as Customer</Link>
             <Link href="/signup?role=vendor" className="text-minimal-red hover:underline font-semibold transition-all">Become a Vendor</Link>

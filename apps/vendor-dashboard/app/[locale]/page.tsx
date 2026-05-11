@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element -- Product previews come from dynamic upload URLs. */
+
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
@@ -29,6 +31,19 @@ interface VendorProfile {
   requiresNewFee?: boolean;
   reapplyDeadline?: string | null;
 }
+
+const getMutationErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const responseError = error as { response?: { data?: { message?: string } } };
+    return responseError.response?.data?.message || (error instanceof Error ? error.message : fallback);
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 export default function VendorDashboardPage() {
   const queryClient = useQueryClient();
@@ -148,7 +163,8 @@ export default function VendorDashboardPage() {
       Cookies.remove('accessToken');
       Cookies.remove('refreshToken');
       delete apiClient.defaults.headers.common.Authorization;
-      window.location.href = 'http://localhost:3001/en/login';
+      const currentLocale = pathname.match(/^\/(en|es|fr)(\/|$)/)?.[1] ?? 'en';
+      window.location.href = `http://localhost:3001/${currentLocale}/login`;
     }
   });
 
@@ -161,8 +177,8 @@ export default function VendorDashboardPage() {
       setReapplyMessage(data.message || 'Vendor application updated.');
       queryClient.invalidateQueries({ queryKey: ['vendorProfile'] });
     },
-    onError: (error: any) => {
-      setReapplyMessage(error?.response?.data?.message || error?.message || 'Unable to update vendor application.');
+    onError: (error: unknown) => {
+      setReapplyMessage(getMutationErrorMessage(error, 'Unable to update vendor application.'));
     }
   });
 
@@ -211,8 +227,8 @@ export default function VendorDashboardPage() {
        setSelectedFile(null);
        queryClient.invalidateQueries({ queryKey: ['vendorProfile'] });
      },
-     onError: (error: any) => {
-       setUploadMessage(error?.message || 'Document upload failed.');
+     onError: (error: unknown) => {
+       setUploadMessage(getMutationErrorMessage(error, 'Document upload failed.'));
      }
   });
 
@@ -277,8 +293,8 @@ export default function VendorDashboardPage() {
       });
       queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
     },
-    onError: (error: any) => {
-      setProductMessage(error?.response?.data?.message || error?.message || 'Product creation failed.');
+    onError: (error: unknown) => {
+      setProductMessage(getMutationErrorMessage(error, 'Product creation failed.'));
     }
   });
 

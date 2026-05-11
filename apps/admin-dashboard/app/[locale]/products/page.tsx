@@ -1,7 +1,28 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element -- Moderation previews come from dynamic upload URLs. */
+
 import { useAdminPendingProducts, useModerateProduct } from '../../../hooks/useAdmin';
 import React, { useState } from 'react';
+
+interface PendingProductsPage {
+  data: PendingProduct[];
+}
+
+interface PendingProduct {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  stockQuantity: number;
+  imageUrls?: string[];
+  category?: {
+    name: string;
+  } | null;
+  vendor?: {
+    companyName: string;
+  } | null;
+}
 
 export default function ModerationQueuePage() {
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useAdminPendingProducts();
@@ -11,7 +32,7 @@ export default function ModerationQueuePage() {
   if (isLoading) return <div className="flex h-full items-center justify-center p-8 text-2xl font-black">FETCHING MANIFESTS...</div>;
   if (isError) return <div className="text-[#ff3b30] font-black text-2xl">FAILED TO FETCH QUEUE</div>;
 
-  const products = data?.pages.flatMap((page: any) => page.data) || [];
+  const products = (data?.pages as PendingProductsPage[] | undefined)?.flatMap((page) => page.data) || [];
 
   const handleAction = (productId: string, action: 'approve' | 'reject' | 'flag') => {
     let reason;
@@ -51,7 +72,7 @@ export default function ModerationQueuePage() {
          </div>
       ) : (
         <div className="grid grid-cols-1 divide-y divide-[#f4f4f5] dark:divide-white/10 glass-card p-0 overflow-hidden">
-          {products.map((product: any) => (
+          {products.map((product) => (
             <div key={product.id} className="p-6 md:p-8 flex flex-col md:flex-row gap-8">
                {/* Product Image / Visual Placeholder */}
                <div className="w-full md:w-48 h-48 bg-gray-100 dark:bg-white/5 rounded-2xl flex-shrink-0 flex items-center justify-center overflow-hidden">
