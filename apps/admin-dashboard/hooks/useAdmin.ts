@@ -4,10 +4,15 @@ import { apiClient } from '@repo/api';
 export const useAdminAnalytics = () => {
   return useQuery({
     queryKey: ['admin-analytics'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/admin/analytics');
+    queryFn: async ({ signal }) => {
+      const { data } = await apiClient.get('/admin/analytics', { signal });
       return data;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: false,
   });
 };
 

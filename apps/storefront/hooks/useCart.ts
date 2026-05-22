@@ -1,8 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
+import Cookies from 'js-cookie';
+import { usePathname } from '../i18n/routing';
 
 export const useCart = () => {
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const isAuthPage = pathname.includes('/login') || pathname.includes('/signup');
+  const isAuthenticated = !!Cookies.get('accessToken') || !!Cookies.get('refreshToken');
 
   const cartQuery = useQuery({
     queryKey: ['cart'],
@@ -10,6 +15,7 @@ export const useCart = () => {
       const { data } = await apiClient.get('/cart');
       return data;
     },
+    enabled: isAuthenticated && !isAuthPage,
   });
 
   const addItem = useMutation({

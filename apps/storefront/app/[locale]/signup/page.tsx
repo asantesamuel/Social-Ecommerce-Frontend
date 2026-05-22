@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { Link } from '../../../i18n/routing';
 import { Eye, EyeOff } from 'lucide-react';
@@ -15,16 +15,25 @@ export default function SignupPage() {
   const [validationError, setValidationError] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companyEstablishedDate, setCompanyEstablishedDate] = useState('');
+  const submitLock = useRef(false);
   const { register } = useAuth();
   const searchParams = useSearchParams();
   const isVendor = searchParams.get('role') === 'vendor';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLock.current || register.isPending) {
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    const trimmedCompanyName = companyName.trim();
     
     // Standard frontend validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       setValidationError('Please enter a valid email address.');
       return;
     }
@@ -37,15 +46,25 @@ export default function SignupPage() {
     }
 
     setValidationError('');
+    submitLock.current = true;
     register.mutate({ 
-      firstName, 
-      lastName, 
-      email, 
+      firstName: trimmedFirstName, 
+      lastName: trimmedLastName, 
+      email: normalizedEmail, 
       password,
       role: isVendor ? 'vendor' : 'customer',
-      ...(isVendor && { companyName, companyEstablishedDate })
+      ...(isVendor && { companyName: trimmedCompanyName, companyEstablishedDate })
+    }, {
+      onSettled: () => {
+        submitLock.current = false;
+      },
     });
   };
+
+  const registerError = register.error as any;
+  const registerErrorMessage =
+    registerError?.response?.data?.message ||
+    'Registration failed. Please try again.';
 
   return (
     <div className="flex h-screen w-full items-center justify-center p-4">
@@ -151,7 +170,7 @@ export default function SignupPage() {
           </button>
           
           {validationError && <p className="text-minimal-red text-sm text-center font-bold">{validationError}</p>}
-          {register.isError && <p className="text-minimal-red text-sm text-center">Registration failed</p>}
+          {register.isError && <p className="text-minimal-red text-sm text-center">{registerErrorMessage}</p>}
         </form>
 
         <p className="mt-6 text-center text-sm text-minimal-gray">

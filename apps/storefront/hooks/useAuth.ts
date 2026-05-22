@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@repo/api';
 import Cookies from 'js-cookie';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '../i18n/routing';
 
 type AuthCredentials = {
   email: string;
@@ -10,6 +10,7 @@ type AuthCredentials = {
   lastName?: string;
   role?: string;
   companyName?: string;
+  companyEstablishedDate?: string;
 };
 
 export const useAuth = () => {
