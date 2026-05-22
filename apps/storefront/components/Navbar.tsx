@@ -1,6 +1,6 @@
 'use client';
 
-import { ShoppingBag, Globe, LogOut } from 'lucide-react';
+import { ShoppingBag, Globe, LogOut, UserRound } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, usePathname, useRouter } from '../i18n/routing';
@@ -13,6 +13,7 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const isAuthenticated = !!Cookies.get('accessToken') || !!Cookies.get('refreshToken');
 
   const handleLangChange = (locale: string) => {
     router.replace(pathname, { locale });
@@ -38,24 +39,26 @@ export default function Navbar() {
   const cartItemCount = cart.data?.items?.length || 0;
 
   return (
-    <nav className="fixed top-0 w-full z-50 glass-card rounded-none border-t-0 border-x-0 !px-8 !py-4 flex items-center justify-between shadow-sm">
-      <Link href="/" className="text-2xl font-bold tracking-tighter">
-        STOREFRONT<span className="text-minimal-red">.</span>
+    <nav className="fixed left-0 top-0 z-50 w-full border-b border-[#ded7ca]/80 bg-[#fffdf8]/82 px-4 py-3 shadow-[0_14px_40px_rgba(17,16,14,0.06)] backdrop-blur-xl sm:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between">
+      <Link href="/" className="group flex items-center gap-3 text-xl font-black uppercase tracking-[0.08em]">
+        <span className="grid h-9 w-9 place-items-center rounded-[8px] bg-[#11100e] text-sm text-[#fffdf8] transition-transform duration-300 group-hover:-rotate-6">S</span>
+        <span>Storefront<span className="text-[#c83a2d]">.</span></span>
       </Link>
       
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2 sm:gap-3">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <button aria-label='Language' className="flex items-center gap-2 hover:opacity-70 transition-opacity outline-none">
+            <button aria-label='Language' className="grid h-10 w-10 place-items-center rounded-[8px] border border-[#ded7ca] bg-white/70 text-[#11100e] transition-all hover:-translate-y-0.5 hover:border-[#11100e]">
               <Globe size={20} />
             </button>
           </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end" className="bg-white border border-white/20 p-2 rounded-xl mt-2 shadow-xl shadow-black/10 z-50 min-w-[120px] dark:bg-black/90 dark:backdrop-blur-xl">
+          <DropdownMenu.Content align="end" className="z-50 mt-2 min-w-[120px] rounded-[8px] border border-[#ded7ca] bg-[#fffdf8] p-2 shadow-[0_18px_50px_rgba(17,16,14,0.12)]">
             {['en', 'es', 'fr'].map((lang) => (
               <DropdownMenu.Item
                 key={lang}
                 onClick={() => handleLangChange(lang)}
-                className="px-4 py-2 text-sm uppercase rounded-lg hover:bg-black/5 dark:hover:bg-white/10 hover:outline-none cursor-pointer transition-colors"
+                className="cursor-pointer rounded-[6px] px-4 py-2 text-sm font-bold uppercase tracking-[0.08em] outline-none transition-colors hover:bg-[#11100e] hover:text-white"
               >
                 {lang}
               </DropdownMenu.Item>
@@ -63,17 +66,24 @@ export default function Navbar() {
           </DropdownMenu.Content>
         </DropdownMenu.Root>
 
-        <Link href="/cart" className="relative hover:opacity-70 transition-opacity">
+        <Link href="/cart" aria-label="Cart" className="relative grid h-10 w-10 place-items-center rounded-[8px] border border-[#ded7ca] bg-white/70 text-[#11100e] transition-all hover:-translate-y-0.5 hover:border-[#11100e]">
           <ShoppingBag size={20} />
           {cartItemCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-minimal-red text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+            <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c83a2d] px-1 text-[10px] font-black text-white">
               {cartItemCount}
             </span>
           )}
         </Link>
-        <button aria-label='Logout' onClick={handleLogout} className="hover:opacity-70 transition-opacity text-minimal-gray hover:text-minimal-red">
-          <LogOut size={20} />
-        </button>
+        {isAuthenticated ? (
+          <button aria-label='Logout' onClick={handleLogout} className="grid h-10 w-10 place-items-center rounded-[8px] border border-[#ded7ca] bg-white/70 text-[#706b63] transition-all hover:-translate-y-0.5 hover:border-[#c83a2d] hover:text-[#c83a2d]">
+            <LogOut size={19} />
+          </button>
+        ) : (
+          <Link href="/login" aria-label="Account" className="grid h-10 w-10 place-items-center rounded-[8px] border border-[#ded7ca] bg-white/70 text-[#11100e] transition-all hover:-translate-y-0.5 hover:border-[#11100e]">
+            <UserRound size={19} />
+          </Link>
+        )}
+      </div>
       </div>
     </nav>
   );

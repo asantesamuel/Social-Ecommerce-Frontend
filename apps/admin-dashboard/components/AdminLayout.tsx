@@ -37,23 +37,24 @@ export default function AdminLayout({ children, locale }: { children: React.Reac
   ];
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
-      {/* Top Navbar */}
-      <nav className="fixed top-0 w-full z-50 glass-card rounded-none border-t-0 border-x-0 !px-8 !py-4 flex items-center justify-between shadow-sm">
-        <Link href="/" className="text-2xl font-black tracking-tighter uppercase whitespace-nowrap">
-          ADMIN<span className="text-[#ff3b30]">.</span>
+    <div className="min-h-screen">
+      <nav className="fixed left-0 top-0 z-50 w-full border-b border-[#ded7ca]/80 bg-[#fffdf8]/84 px-4 py-3 shadow-[0_14px_40px_rgba(17,16,14,0.06)] backdrop-blur-xl sm:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <Link href="/" className="group flex items-center gap-3 whitespace-nowrap text-xl font-black uppercase tracking-[0.08em]">
+          <span className="grid h-9 w-9 place-items-center rounded-[8px] bg-[#11100e] text-sm text-[#fffdf8] transition-transform duration-300 group-hover:-rotate-6">A</span>
+          <span>Admin<span className="text-[#c83a2d]">.</span></span>
         </Link>
         
-        <div className="flex items-center gap-8">
-          <div className="hidden md:flex gap-6">
+        <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-1 rounded-[8px] border border-[#ded7ca] bg-white/60 p-1 lg:flex">
             {navLinks.map((link) => {
               const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
               return (
                 <Link 
                   key={link.name} 
                   href={link.href}
-                  className={`text-sm font-black uppercase tracking-widest transition-colors ${
-                    isActive ? 'text-[#ff3b30]' : 'text-gray-400 hover:text-black'
+                  className={`rounded-[6px] px-3 py-2 text-xs font-black uppercase tracking-[0.1em] transition-colors ${
+                    isActive ? 'bg-[#11100e] text-[#fffdf8]' : 'text-[#706b63] hover:bg-[#11100e]/5 hover:text-[#11100e]'
                   }`}
                 >
                   {link.name}
@@ -62,14 +63,14 @@ export default function AdminLayout({ children, locale }: { children: React.Reac
             })}
           </div>
           
-          <button onClick={handleLogout} className="hover:opacity-70 transition-opacity text-sm font-black uppercase tracking-widest text-[#ff3b30] hover:text-black">
+          <button onClick={handleLogout} className="rounded-[8px] border border-[#ded7ca] bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#c83a2d] transition-all hover:-translate-y-0.5 hover:border-[#c83a2d]">
             Logout
           </button>
         </div>
+        </div>
       </nav>
 
-      {/* Main Content Wrapper */}
-      <main className="pt-28 pb-16 px-8 lg:px-16 max-w-6xl mx-auto">
+      <main className="mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-8 lg:pt-32">
         <div className="flex flex-col gap-8">
           {children}
         </div>
