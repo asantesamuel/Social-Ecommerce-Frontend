@@ -22,6 +22,10 @@ This workspace contains the frontend applications for the e-commerce platform. I
 - vendor onboarding with Paystack fee payment and document submission
 - localized routing with `next-intl` for `en`, `es`, and `fr`
 
+## Architecture Review
+
+See `docs/frontend-review.md` for the frontend architecture review, API-spec alignment notes, cleanup report, workflow status, backlog, and post-refactor test checklist.
+
 ## Development
 
 Install dependencies:

@@ -1,15 +1,18 @@
-import createMiddleware from 'next-intl/middleware';
-import { NextRequest, NextResponse } from 'next/server';
-import { routing } from './i18n/routing';
+import createMiddleware from "next-intl/middleware";
+import { NextRequest, NextResponse } from "next/server";
+import { routing } from "./i18n/routing";
 
 const intlMiddleware = createMiddleware(routing);
+const storefrontUrl =
+  process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3001";
 
 export function proxy(req: NextRequest) {
   const url = req.nextUrl.clone();
-  const hasToken = req.cookies.has('refreshToken');
-  
+  const hasToken = req.cookies.has("refreshToken");
+
   // Normalize the pathname to check what page we are on
-  const isAuthPage = url.pathname.includes('/login') || url.pathname.includes('/signup');
+  const isAuthPage =
+    url.pathname.includes("/login") || url.pathname.includes("/signup");
 
   // Let Next-Intl handle the initial i18n redirect rules
   const res = intlMiddleware(req);
@@ -17,13 +20,9 @@ export function proxy(req: NextRequest) {
   // If there's no auth token, redirect to login
   if (!hasToken && !isAuthPage) {
     const localeMatch = url.pathname.match(/^\/(en|es|fr)/);
-    const locale = localeMatch ? localeMatch[1] : 'en';
+    const locale = localeMatch ? localeMatch[1] : "en";
 
-    url.protocol = 'http:';
-    url.hostname = 'localhost';
-    url.port = '3001';
-    url.pathname = `/${locale}/login`;
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(new URL(`/${locale}/login`, storefrontUrl));
   }
 
   return res;
@@ -31,5 +30,5 @@ export function proxy(req: NextRequest) {
 
 export const config = {
   // Match only internationalized pathnames
-  matcher: ['/', '/(en|es|fr)/:path*']
+  matcher: ["/", "/(en|es|fr)/:path*"],
 };

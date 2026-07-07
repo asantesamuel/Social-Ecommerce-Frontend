@@ -1,42 +1,50 @@
-'use client';
+"use client";
 
-import { useAdminOrders } from '../../../hooks/useAdmin';
-import React, { useState } from 'react';
-
-interface Order {
-  id: string | number;
-  customer: string;
-  placedAt: string | Date;
-  itemCount: number;
-  total: number | string;
-  status: string;
-}
-
-interface OrderPage {
-  data: Order[];
-  page: number;
-  totalPages: number;
-}
+import { useAdminOrders } from "../../../hooks/useAdmin";
+import React, { useState } from "react";
+import { formatCurrency, type Order, type PaginatedResponse } from "@repo/api";
 
 export default function OrdersManagementPage() {
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useAdminOrders(statusFilter);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAdminOrders(statusFilter);
 
-  if (isLoading) return <div className="flex h-full items-center justify-center p-8 text-2xl font-black">FETCHING ORDERS...</div>;
-  if (isError) return <div className="text-[#ff3b30] font-black text-2xl">FAILED TO FETCH ORDERS</div>;
+  if (isLoading)
+    return (
+      <div className="flex h-full items-center justify-center p-8 text-2xl font-black">
+        FETCHING ORDERS...
+      </div>
+    );
+  if (isError)
+    return (
+      <div className="text-[#ff3b30] font-black text-2xl">
+        FAILED TO FETCH ORDERS
+      </div>
+    );
 
-  const orders = data?.pages.flatMap((page: OrderPage) => page.data) || [];
+  const orders =
+    data?.pages.flatMap((page: PaginatedResponse<Order>) => page.data) || [];
 
   return (
     <div className="flex flex-col gap-8">
       <header className="flex justify-between items-center">
         <div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter">Order Matrix</h2>
-          <p className="text-gray-500 font-medium whitespace-nowrap">Global logistics and sales stream.</p>
+          <h2 className="text-4xl font-black uppercase tracking-tighter">
+            Order Matrix
+          </h2>
+          <p className="text-gray-500 font-medium whitespace-nowrap">
+            Global logistics and sales stream.
+          </p>
         </div>
-        <select 
-          aria-label='Order Status Filter'
-          value={statusFilter} 
+        <select
+          aria-label="Order Status Filter"
+          value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="bg-transparent border border-[#e4e4e7] dark:border-white/20 rounded-xl px-4 py-2 font-bold uppercase text-sm outline-none"
         >
@@ -65,12 +73,26 @@ export default function OrdersManagementPage() {
             </thead>
             <tbody>
               {orders.map((order: Order) => (
-                <tr key={order.id} className="border-b border-[#f4f4f5] dark:border-white/10 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <td className="p-4 font-bold max-w-[120px] truncate" title={String(order.id)}>{order.id}</td>
-                  <td className="p-4 text-gray-600 dark:text-gray-300 font-medium">{order.customer}</td>
-                  <td className="p-4 text-gray-500 font-medium text-xs">{new Date(order.placedAt).toLocaleString()}</td>
-                  <td className="p-4 font-bold">{order.itemCount}</td>
-                  <td className="p-4 text-right font-black">${order.total}</td>
+                <tr
+                  key={order.id}
+                  className="border-b border-[#f4f4f5] dark:border-white/10 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  <td
+                    className="p-4 font-bold max-w-[120px] truncate"
+                    title={String(order.id)}
+                  >
+                    {order.id}
+                  </td>
+                  <td className="p-4 text-gray-600 dark:text-gray-300 font-medium">
+                    {order.customer || "Unknown customer"}
+                  </td>
+                  <td className="p-4 text-gray-500 font-medium text-xs">
+                    {new Date(order.placedAt).toLocaleString()}
+                  </td>
+                  <td className="p-4 font-bold">{order.itemCount ?? 0}</td>
+                  <td className="p-4 text-right font-black">
+                    {formatCurrency(order.total)}
+                  </td>
                   <td className="p-4 text-right">
                     <span className="text-[10px] font-bold uppercase px-2 py-1 bg-black text-white dark:bg-white dark:text-black rounded-full">
                       {order.status}
@@ -89,7 +111,7 @@ export default function OrdersManagementPage() {
           disabled={isFetchingNextPage}
           className="mx-auto w-full max-w-sm py-4 border-2 border-black dark:border-white rounded-2xl font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
         >
-          {isFetchingNextPage ? 'Extracting...' : 'Load More Orders'}
+          {isFetchingNextPage ? "Extracting..." : "Load More Orders"}
         </button>
       )}
     </div>
