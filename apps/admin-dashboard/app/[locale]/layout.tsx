@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import "../globals.css";
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 
-import AdminLayout from '../../components/AdminLayout';
-import QueryProvider from '../../lib/QueryProvider';
+import AdminLayout from "../../components/AdminLayout";
+import QueryProvider from "../../lib/QueryProvider";
 
-const spaceGrotesk = Space_Grotesk({
+const spaceGrotesk = localFont({
+  src: "../fonts/GeistVF.woff",
   variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: "100 900",
 });
 
 export const metadata: Metadata = {
@@ -29,12 +29,13 @@ export default async function RootLayout({
   const messages = await getMessages();
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={`${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
+      <body
+        className={`${spaceGrotesk.variable} antialiased`}
+        suppressHydrationWarning
+      >
         <NextIntlClientProvider messages={messages} locale={locale}>
           <QueryProvider>
-            <AdminLayout locale={locale}>
-              {children}
-            </AdminLayout>
+            <AdminLayout locale={locale}>{children}</AdminLayout>
           </QueryProvider>
         </NextIntlClientProvider>
       </body>

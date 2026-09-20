@@ -1,33 +1,24 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
+import { useQuery } from "@tanstack/react-query";
+import { catalogApi, type ProductQueryParams } from "@repo/api";
 
-export const useProducts = (params?: { page?: number; limit?: number; search?: string; categoryId?: string }) => {
+export const useProducts = (params?: ProductQueryParams) => {
   return useQuery({
-    queryKey: ['products', params],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/products', { params });
-      return data;
-    },
+    queryKey: ["products", params],
+    queryFn: () => catalogApi.listProducts(params),
   });
 };
 
 export const useProduct = (id: string) => {
   return useQuery({
-    queryKey: ['products', id],
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/products/${id}`);
-      return data;
-    },
+    queryKey: ["products", id],
+    queryFn: () => catalogApi.getProduct(id),
     enabled: !!id,
   });
 };
 
 export const useCategories = () => {
   return useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/categories');
-      return data;
-    },
+    queryKey: ["categories"],
+    queryFn: catalogApi.listCategories,
   });
 };

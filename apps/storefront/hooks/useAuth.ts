@@ -1,62 +1,59 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@repo/api';
-import Cookies from 'js-cookie';
-import { useRouter } from '../i18n/routing';
-
-type AuthCredentials = {
-  email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  role?: string;
-  companyName?: string;
-  companyEstablishedDate?: string;
-};
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  authApi,
+  getLocaleFromPath,
+  getRoleLandingUrl,
+  persistAuthSession,
+  type RegisterPayload,
+} from "@repo/api";
+import { useRouter } from "../i18n/routing";
 
 export const useAuth = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: AuthCredentials) => {
-      const { data } = await apiClient.post('/auth/login', credentials);
-      return data;
-    },
+    mutationFn: authApi.login,
     onSuccess: (data) => {
-      Cookies.set('accessToken', data.accessToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
-      Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
-      apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
+      persistAuthSession(data);
       queryClient.invalidateQueries();
-      
+
       const role = data.user?.role;
-      if (role === 'admin') {
-        window.location.href = 'http://localhost:3002/en';
-      } else if (role === 'vendor') {
-        window.location.href = 'http://localhost:3003/en';
+      if (role === "admin") {
+        window.location.href = getRoleLandingUrl(
+          role,
+          getLocaleFromPath(window.location.pathname),
+        );
+      } else if (role === "vendor") {
+        window.location.href = getRoleLandingUrl(
+          role,
+          getLocaleFromPath(window.location.pathname),
+        );
       } else {
-        router.push('/');
+        router.push("/");
       }
     },
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials: AuthCredentials) => {
-      const { data } = await apiClient.post('/auth/register', credentials);
-      return data;
-    },
+    mutationFn: (credentials: RegisterPayload) => authApi.register(credentials),
     onSuccess: (data) => {
-      Cookies.set('accessToken', data.accessToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
-      Cookies.set('refreshToken', data.refreshToken, { secure: window.location.protocol === 'https:', sameSite: 'lax' });
-      apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
+      persistAuthSession(data);
       queryClient.invalidateQueries();
-      
+
       const role = data.user?.role;
-      if (role === 'admin') {
-        window.location.href = 'http://localhost:3002/en';
-      } else if (role === 'vendor') {
-        window.location.href = 'http://localhost:3003/en';
+      if (role === "admin") {
+        window.location.href = getRoleLandingUrl(
+          role,
+          getLocaleFromPath(window.location.pathname),
+        );
+      } else if (role === "vendor") {
+        window.location.href = getRoleLandingUrl(
+          role,
+          getLocaleFromPath(window.location.pathname),
+        );
       } else {
-        router.push('/');
+        router.push("/");
       }
     },
   });
