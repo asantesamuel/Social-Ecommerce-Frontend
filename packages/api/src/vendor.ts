@@ -1,15 +1,84 @@
 import { apiClient } from "./client";
+import {
+  createMockVendorApplicationDocument,
+  createMockVendorProfile,
+  getMockVendorProfile,
+  submitMockVendorApplication,
+} from "./mocks/vendor";
 import type {
   PaginatedResponse,
+  VendorApplicationDocumentInput,
+  VendorApplicationDocumentPayload,
+  VendorApplicationPayload,
+  VendorApplicationSubmissionPayload,
   VendorDocument,
   VendorDocumentType,
   VendorProfile,
 } from "./types";
+import { uploadsApi } from "./uploads";
+
+const useMockVendorApplications = () =>
+  process.env.NEXT_PUBLIC_VENDOR_APPLICATIONS_SOURCE !== "api";
+
+const uploadApplicationDocument = async ({
+  documentType,
+  file,
+}: VendorApplicationDocumentInput): Promise<VendorApplicationDocumentPayload> => {
+  const { fileKey } = await uploadsApi.uploadFile(file, "documents");
+  return {
+    fileKey,
+    documentType,
+    filename: file.name,
+    contentType: file.type || "application/octet-stream",
+    fileSize: file.size,
+  };
+};
 
 export const vendorApi = {
   async getMyProfile(): Promise<VendorProfile> {
+    if (useMockVendorApplications()) {
+      return (
+        getMockVendorProfile() ??
+        createMockVendorProfile({
+          businessName: "Demo Vendor",
+          registrationNumber: "MOCK-REG-001",
+          contactEmail: "vendor@example.com",
+          country: "Ghana",
+          documents: [],
+        })
+      );
+    }
+
     const { data } = await apiClient.get<VendorProfile>("/vendors/me");
     return data;
+  },
+
+  async apply(payload: VendorApplicationPayload): Promise<VendorProfile> {
+    if (useMockVendorApplications()) {
+      return submitMockVendorApplication(payload);
+    }
+
+    const { data } = await apiClient.post<VendorProfile>(
+      "/vendors/apply",
+      payload,
+    );
+    return data;
+  },
+
+  async submitApplication(
+    payload: VendorApplicationSubmissionPayload,
+  ): Promise<VendorProfile> {
+    const documents = useMockVendorApplications()
+      ? payload.documents.map(createMockVendorApplicationDocument)
+      : await Promise.all(payload.documents.map(uploadApplicationDocument));
+
+    return vendorApi.apply({
+      businessName: payload.businessName,
+      registrationNumber: payload.registrationNumber,
+      contactEmail: payload.contactEmail,
+      country: payload.country,
+      documents,
+    });
   },
 
   async payOnboardingFee(payload: {

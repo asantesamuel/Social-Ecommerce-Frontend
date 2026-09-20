@@ -12,7 +12,7 @@ The frontend is a Turborepo monorepo with three Next.js applications:
 
 The backend specification describes a role-based platform with customers, vendors, and admins, JWT access/refresh tokens, Paystack checkout and onboarding payments, S3 pre-signed uploads, vendor approval state, product moderation, cart/order workflows, and social cart sharing.
 
-The frontend currently implements the shell for all three roles and has the strongest coverage around vendor onboarding/admin review. Storefront browsing and cart are present. Checkout, order history, customer social features, admin category management, refunds, and full role-aware route enforcement are still not implemented.
+The frontend currently implements the shell for all three roles and has the strongest coverage around vendor onboarding/admin review. Storefront browsing and cart are present. Checkout, order history, customer social features, admin category management, and refunds are still not implemented.
 
 ## Turborepo Architecture
 
@@ -42,26 +42,26 @@ Each app uses:
 - `next-intl` localized routing for `en`, `es`, and `fr`.
 - React Query for API state.
 - Cookie-based access/refresh token storage via shared API helpers.
-- A `proxy.ts` route guard that checks for a refresh token and redirects to storefront login when missing.
+- A `proxy.ts` route guard that checks for an auth session, applies role-aware UX routing, and redirects to storefront login when missing.
 
 ## Backend API Alignment
 
-| Area                                | Status                               | Notes                                                                                                                                                                                  |
-| ----------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Roles: customer, vendor, admin      | Partial                              | Apps exist for all roles. Admin user filter now uses `customer` instead of `user`. Client route guards still only check token presence, not decoded role.                              |
-| JWT access and refresh tokens       | Implemented                          | Shared axios client attaches access token and refreshes on 401. Login/logout use shared session helpers.                                                                               |
-| Customer registration/login         | Implemented                          | Storefront login/signup works against `/auth/login` and `/auth/register`. Vendor signup still uses a legacy `role=vendor` registration path.                                           |
-| Vendor onboarding state machine     | Partial                              | Vendor dashboard supports `pending_payment`, `pending_review`, `rejected`, and `approved`. It still depends on backend-specific `/vendors/reapply` behavior not described in the spec. |
-| Paystack onboarding fee             | Partial                              | Vendor dashboard posts to `/vendors/pay-fee`, redirects to Paystack, and polls `/vendors/me` after return. Webhook confirmation remains backend-owned.                                 |
-| Product catalogue                   | Partial                              | Storefront lists products and details. Search/filter UI is not fully wired.                                                                                                            |
-| Product approval flow               | Partial                              | Admin moderation queue can approve/reject/flag pending products. Vendor products display approval status.                                                                              |
-| Cart                                | Partial                              | Storefront can view, add, update, remove, and clear cart items. Shared cart social flow is missing.                                                                                    |
-| Checkout and Paystack order payment | Not implemented                      | Cart page has a checkout button only. No shipping address, `/orders/checkout`, Paystack callback, order confirmation, or payment status view.                                          |
-| Orders                              | Partial                              | Admin order list exists. Customer order history/details are missing. Vendor order view is missing.                                                                                     |
-| S3 pre-signed upload flow           | Implemented for vendor/product flows | Upload helper now centralizes presign, direct PUT, and confirm. Vendor documents and product images use it.                                                                            |
-| Admin management                    | Partial                              | Analytics, users, orders, low-stock inventory, product moderation, and vendor review exist. Categories, refunds, platform config, feature flags, and transaction review are missing.   |
-| Social features                     | Not implemented                      | Friend requests, friends list, shared carts, and shared cart views are not present.                                                                                                    |
-| Security expectations               | Partial                              | Client adds bearer token and refreshes. True authorization remains backend-owned. Frontend should add role-aware UX guards later.                                                      |
+| Area                                | Status                               | Notes                                                                                                                                                                                            |
+| ----------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Roles: customer, vendor, admin      | Implemented for UX routing           | Apps exist for all roles. Admin user filter uses `customer` instead of `user`. App proxies now apply role-aware UX guards while backend authorization remains authoritative.                     |
+| JWT access and refresh tokens       | Implemented                          | Shared axios client attaches access token and refreshes on 401. Login/logout use shared session helpers.                                                                                         |
+| Customer registration/login         | Implemented                          | Storefront login/signup works against `/auth/login` and `/auth/register`. Vendor application signup creates a customer login and uses typed mock `/vendors/apply` data until the backend exists. |
+| Vendor onboarding state machine     | Partial                              | Vendor dashboard supports `pending_payment`, `pending_review`, `rejected`, and `approved`. It still depends on backend-specific `/vendors/reapply` behavior not described in the spec.           |
+| Paystack onboarding fee             | Partial                              | Vendor dashboard posts to `/vendors/pay-fee`, redirects to Paystack, and polls `/vendors/me` after return. Webhook confirmation remains backend-owned.                                           |
+| Product catalogue                   | Partial                              | Storefront lists products and details. Search/filter UI is not fully wired.                                                                                                                      |
+| Product approval flow               | Partial                              | Admin moderation queue can approve/reject/flag pending products. Vendor products display approval status.                                                                                        |
+| Cart                                | Partial                              | Storefront can view, add, update, remove, and clear cart items. Shared cart social flow is missing.                                                                                              |
+| Checkout and Paystack order payment | Not implemented                      | Cart page has a checkout button only. No shipping address, `/orders/checkout`, Paystack callback, order confirmation, or payment status view.                                                    |
+| Orders                              | Partial                              | Admin order list exists. Customer order history/details are missing. Vendor order view is missing.                                                                                               |
+| S3 pre-signed upload flow           | Implemented for vendor/product flows | Upload helper now centralizes presign, direct PUT, and confirm. Vendor documents and product images use it.                                                                                      |
+| Admin management                    | Partial                              | Analytics, users, orders, low-stock inventory, product moderation, and vendor review exist. Categories, refunds, platform config, feature flags, and transaction review are missing.             |
+| Social features                     | Not implemented                      | Friend requests, friends list, shared carts, and shared cart views are not present.                                                                                                              |
+| Security expectations               | Partial                              | Client adds bearer token and refreshes. Role-aware app proxies are UX gates only; true authorization remains backend-owned.                                                                      |
 
 ## Workflow Review
 
@@ -79,11 +79,11 @@ Files:
 Flow:
 
 1. User submits credentials in storefront.
-2. `useAuth` calls `authApi.login` or `authApi.register`.
+2. `useAuth` calls `authApi.login`, `authApi.register`, or customer registration followed by `vendorApi.submitApplication` for vendor applicants.
 3. Shared session helper writes `accessToken` and `refreshToken`.
 4. Role decides redirect: customer to storefront, admin to admin dashboard, vendor to vendor dashboard.
 
-Status: implemented for basic login/signup. Needs backend confirmation for vendor registration, because the spec prefers vendor onboarding through `/vendors/apply` after customer registration.
+Status: implemented for basic login/signup and vendor application signup. Vendor applicants start with a customer account, provide an initial verification document, submit through typed mock vendor application data, and then continue in the vendor dashboard onboarding states. Set `NEXT_PUBLIC_VENDOR_APPLICATIONS_SOURCE=api` when the backend `/vendors/apply` endpoint and document upload contract are ready.
 
 ### Authentication And Session Handling
 
@@ -100,7 +100,7 @@ Flow:
 3. A 401 triggers `/auth/refresh` using `refreshToken`.
 4. Failed refresh clears cookies and redirects to storefront login.
 
-Status: implemented. Route proxies are UX gates only; they do not verify roles.
+Status: implemented. Route proxies are role-aware UX gates only; they are not a replacement for backend authorization.
 
 ### Customer Product Browsing
 
@@ -358,9 +358,7 @@ Implemented:
 
 Partially implemented:
 
-- Role-based UX routing.
 - Product filtering/pagination/search.
-- Vendor onboarding alignment with `/vendors/apply`.
 - Product moderation.
 - Vendor product management.
 - Admin order management.
@@ -383,7 +381,8 @@ Not implemented yet:
 
 Needs backend confirmation:
 
-- Exact vendor application endpoint and payload. The spec says `/vendors/apply`; current UI still has vendor signup via `/auth/register?role=vendor` and dashboard uses `/vendors/me`.
+- Exact `/vendors/apply` availability and document upload contract. The UI currently uses typed mock vendor application data by default.
+- Exact vendor reapply behavior and fee requirements after rejection.
 - Whether product browse is public or requires JWT. The spec has conflicting signals: customer browsing is a core capability, but security notes say all routes except auth require JWT.
 - Exact admin product moderation endpoint shape.
 - Exact vendor document review URL flow for admin.
@@ -392,7 +391,6 @@ Needs backend confirmation:
 Needs product/design decision:
 
 - Whether storefront should allow anonymous catalogue browsing.
-- Whether vendor onboarding starts from customer account upgrade or separate vendor signup.
 - How shared carts should appear in customer navigation.
 - How to present order tracking and refund status.
 
@@ -403,6 +401,7 @@ Needs product/design decision:
 - Delete both tokens; verify protected routes redirect to storefront login.
 - Storefront: load catalogue, product detail, add item, update quantity, remove item, clear cart.
 - Storefront: verify prices render when API sends either numbers or numeric strings.
+- Storefront: vendor application signup creates a customer account, builds typed mock application/document data, and redirects to the vendor dashboard.
 - Vendor: pending payment state launches Paystack fee URL.
 - Vendor: Paystack return with `reference` or `trxref` triggers status polling.
 - Vendor: pending review uploads a document through presign, direct PUT, confirm, and document submit.
