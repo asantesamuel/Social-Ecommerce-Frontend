@@ -64,13 +64,7 @@ export type LoginPayload = {
 export type RegisterPayload = LoginPayload & {
   firstName?: string;
   lastName?: string;
-  role?: UserRole;
-  businessName?: string;
-  companyName?: string;
-  companyEstablishedDate?: string;
-  registrationNumber?: string;
-  contactEmail?: string;
-  country?: string;
+  role?: "customer";
 };
 
 export type Category = {
@@ -197,6 +191,34 @@ export type VendorDocument = {
   fileUrl: string;
   verificationStatus: VerificationStatus | string;
   uploadedAt: string;
+};
+
+export type VendorApplicationDocumentPayload = {
+  fileKey: string;
+  documentType: VendorDocumentType;
+  filename?: string;
+  contentType?: string;
+  fileSize?: number;
+};
+
+export type VendorApplicationPayload = {
+  businessName: string;
+  registrationNumber: string;
+  contactEmail: string;
+  country: string;
+  documents: VendorApplicationDocumentPayload[];
+};
+
+export type VendorApplicationDocumentInput = {
+  file: File;
+  documentType: VendorDocumentType;
+};
+
+export type VendorApplicationSubmissionPayload = Omit<
+  VendorApplicationPayload,
+  "documents"
+> & {
+  documents: VendorApplicationDocumentInput[];
 };
 
 export type PresignUploadPayload = {

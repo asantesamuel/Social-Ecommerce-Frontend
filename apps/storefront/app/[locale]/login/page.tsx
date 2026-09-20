@@ -100,7 +100,7 @@ export default function LoginPage() {
               Sign up as Customer
             </Link>
             <Link
-              href="/signup?role=vendor"
+              href="/signup?intent=vendor"
               className="font-black text-[#11100e] underline decoration-[#c83a2d]/30 underline-offset-4 transition-colors hover:text-[#c83a2d]"
             >
               Become a Vendor

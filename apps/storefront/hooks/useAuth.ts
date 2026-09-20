@@ -4,9 +4,25 @@ import {
   getLocaleFromPath,
   getRoleLandingUrl,
   persistAuthSession,
+  setApiAuthorizationHeader,
+  vendorApi,
   type RegisterPayload,
+  type VendorDocumentType,
 } from "@repo/api";
 import { useRouter } from "../i18n/routing";
+
+export type VendorApplicationSignupPayload = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  businessName: string;
+  registrationNumber: string;
+  contactEmail: string;
+  country: string;
+  document: File;
+  documentType: VendorDocumentType;
+};
 
 export const useAuth = () => {
   const router = useRouter();
@@ -58,5 +74,55 @@ export const useAuth = () => {
     },
   });
 
-  return { login: loginMutation, register: registerMutation };
+  const vendorApplicationMutation = useMutation({
+    mutationFn: async ({
+      businessName,
+      contactEmail,
+      country,
+      document,
+      documentType,
+      email,
+      firstName,
+      lastName,
+      password,
+      registrationNumber,
+    }: VendorApplicationSignupPayload) => {
+      const session = await authApi.register({
+        firstName,
+        lastName,
+        email,
+        password,
+        role: "customer",
+      });
+
+      setApiAuthorizationHeader(session.accessToken);
+
+      const vendorProfile = await vendorApi.submitApplication({
+        businessName,
+        registrationNumber,
+        contactEmail,
+        country,
+        documents: [{ file: document, documentType }],
+      });
+
+      return { session, vendorProfile };
+    },
+    onSuccess: ({ session }) => {
+      persistAuthSession(session, "vendor");
+      queryClient.invalidateQueries();
+      window.location.href = getRoleLandingUrl(
+        "vendor",
+        getLocaleFromPath(window.location.pathname),
+      );
+    },
+    onError: () => {
+      setApiAuthorizationHeader();
+    },
+  });
+
+  return {
+    login: loginMutation,
+    register: registerMutation,
+    vendorApplication: vendorApplicationMutation,
+  };
 };

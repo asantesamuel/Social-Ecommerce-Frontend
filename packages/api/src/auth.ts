@@ -1,5 +1,4 @@
 import { apiClient, setApiAuthorizationHeader } from "./client";
-import { buildLocalizedAppUrl } from "./config";
 import { clearAuthCookies, getRefreshToken, setAuthCookies } from "./session";
 import type {
   AuthResponse,
@@ -29,27 +28,19 @@ export const authApi = {
   },
 };
 
-export const persistAuthSession = (session: AuthResponse) => {
-  setAuthCookies(session);
+export const persistAuthSession = (
+  session: AuthResponse,
+  roleOverride?: UserRole,
+) => {
+  setAuthCookies({
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+    userRole: roleOverride ?? session.user?.role,
+  });
   setApiAuthorizationHeader(session.accessToken);
 };
 
 export const clearAuthSession = () => {
   clearAuthCookies();
   setApiAuthorizationHeader();
-};
-
-export const getRoleLandingUrl = (
-  role: UserRole | string | undefined,
-  locale = "en",
-) => {
-  if (role === "admin") {
-    return buildLocalizedAppUrl("adminDashboard", "/", locale);
-  }
-
-  if (role === "vendor") {
-    return buildLocalizedAppUrl("vendorDashboard", "/", locale);
-  }
-
-  return buildLocalizedAppUrl("storefront", "/", locale);
 };
