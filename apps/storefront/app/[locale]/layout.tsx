@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { Space_Grotesk } from "next/font/google";
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import localFont from "next/font/local";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import QueryProvider from "../../lib/QueryProvider";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import "../globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const spaceGrotesk = localFont({
+  src: "../fonts/GeistVF.woff",
   variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: "100 900",
 });
 
 export const metadata: Metadata = {
@@ -30,7 +30,10 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={`${spaceGrotesk.variable} antialiased min-h-screen flex flex-col`} suppressHydrationWarning>
+      <body
+        className={`${spaceGrotesk.variable} antialiased min-h-screen flex flex-col`}
+        suppressHydrationWarning
+      >
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
             <Navbar />

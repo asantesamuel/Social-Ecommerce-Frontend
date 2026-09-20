@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-space-grotesk)', 'sans-serif'],
+        sans: ["var(--font-space-grotesk)", "sans-serif"],
       },
       colors: {
         background: "var(--background)",
@@ -21,14 +21,14 @@ const config: Config = {
           offWhite: "#f8fafc",
           gray: "#94a3b8",
           dark: "#0f172a",
-        }
+        },
       },
       boxShadow: {
-        'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
+        glass: "0 4px 30px rgba(0, 0, 0, 0.1)",
       },
       backdropBlur: {
-        'glass': '10px',
-      }
+        glass: "10px",
+      },
     },
   },
   plugins: [],

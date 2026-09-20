@@ -1,7 +1,9 @@
-import { getRequestConfig } from 'next-intl/server';
-import { routing } from './routing';
+import { getRequestConfig } from "next-intl/server";
+import { routing } from "./routing";
 
-const isSupportedLocale = (locale: string): locale is (typeof routing.locales)[number] => {
+const isSupportedLocale = (
+  locale: string,
+): locale is (typeof routing.locales)[number] => {
   return routing.locales.some((supportedLocale) => supportedLocale === locale);
 };
 
@@ -12,6 +14,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
   }
   return {
     locale,
-    messages: (await import(`../messages/${locale}.json`)).default
+    messages: (await import(`../messages/${locale}.json`)).default,
   };
 });
