@@ -1,6 +1,11 @@
 import { apiClient, setApiAuthorizationHeader } from "./client";
 import { clearAuthCookies, getRefreshToken, setAuthCookies } from "./session";
-import type { AuthResponse, LoginPayload, RegisterPayload } from "./types";
+import type {
+  AuthResponse,
+  LoginPayload,
+  RegisterPayload,
+  UserRole,
+} from "./types";
 
 export const authApi = {
   async login(payload: LoginPayload): Promise<AuthResponse> {
@@ -23,11 +28,14 @@ export const authApi = {
   },
 };
 
-export const persistAuthSession = (session: AuthResponse) => {
+export const persistAuthSession = (
+  session: AuthResponse,
+  roleOverride?: UserRole,
+) => {
   setAuthCookies({
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
-    userRole: session.user?.role,
+    userRole: roleOverride ?? session.user?.role,
   });
   setApiAuthorizationHeader(session.accessToken);
 };
