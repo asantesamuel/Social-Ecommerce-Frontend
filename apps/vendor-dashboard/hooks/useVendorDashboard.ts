@@ -132,7 +132,7 @@ export const useVendorDashboard = () => {
 
   const logoutMutation = useMutation({
     mutationFn: () => authApi.logout(),
-    onSettled: () => {
+    onSuccess: () => {
       const currentLocale = pathname.match(/^\/(en|es|fr)(\/|$)/)?.[1] ?? "en";
       window.location.href = buildLocalizedAppUrl(
         "storefront",

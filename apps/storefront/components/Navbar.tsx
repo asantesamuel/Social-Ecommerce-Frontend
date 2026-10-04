@@ -27,11 +27,10 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await authApi.logout();
-    } catch {
-      // Continue local logout even if the server cannot be reached.
-    } finally {
       queryClient.clear();
       router.replace("/login");
+    } catch {
+      window.alert("Sign out could not be completed. Please try again.");
     }
   };
 

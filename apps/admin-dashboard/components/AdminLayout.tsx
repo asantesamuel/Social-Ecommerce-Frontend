@@ -20,15 +20,14 @@ export default function AdminLayout({
   const handleLogout = async () => {
     try {
       await authApi.logout();
-    } catch {
-      // Proceed locally if the API is unavailable; the refresh token is still removed below.
-    } finally {
       queryClient.clear();
       window.location.href = buildLocalizedAppUrl(
         "storefront",
         "/login",
         locale,
       );
+    } catch {
+      window.alert("Sign out could not be completed. Please try again.");
     }
   };
 

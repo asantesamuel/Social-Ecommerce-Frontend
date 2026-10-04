@@ -25,13 +25,18 @@ export default function VendorHeader({
         <span className="rounded-full bg-[#111] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white">
           STATUS: {vendorProfile.status}
         </span>
-        <button
-          onClick={() => logoutMutation.mutate()}
-          disabled={logoutMutation.isPending}
-          className="rounded-full border border-[#e4e4e7] bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#111] transition-colors hover:bg-[#f4f4f5] disabled:opacity-50"
-        >
-          {logoutMutation.isPending ? "Signing Out..." : "Logout"}
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            className="rounded-full border border-[#e4e4e7] bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#111] transition-colors hover:bg-[#f4f4f5] disabled:opacity-50"
+          >
+            {logoutMutation.isPending ? "Signing Out..." : "Logout"}
+          </button>
+          {logoutMutation.isError && (
+            <p role="alert" className="text-xs text-red-700">Sign out failed. Try again.</p>
+          )}
+        </div>
       </div>
     </header>
   );
