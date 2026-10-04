@@ -3,6 +3,7 @@ import {
   applySessionResult,
   authenticatedBackendFetch,
   getFrontendOrigin,
+  recordHandoffEvent,
 } from "@repo/api/server";
 
 export const runtime = "nodejs";
@@ -22,7 +23,10 @@ export async function GET(request: NextRequest) {
     !codeChallenge || !validChallenge.test(codeChallenge) || method !== "S256" ||
     [...query.keys()].some((key) => !["clientId", "state", "codeChallenge", "codeChallengeMethod"].includes(key))
   ) {
-    return NextResponse.redirect(new URL("/auth/failed?reason=invalid-request", request.url));
+    return recordHandoffEvent(
+      NextResponse.redirect(new URL("/auth/failed?reason=invalid-request", request.url)),
+      "storefront", "authorize", "invalid-request", state && validState.test(state) ? state : null,
+    );
   }
 
   const loginUrl = new URL("/en/login", getFrontendOrigin("storefront"));
@@ -34,10 +38,16 @@ export async function GET(request: NextRequest) {
       body: JSON.stringify({ clientId, state, codeChallenge, codeChallengeMethod: "S256" }),
     });
     if (!result.response || result.unauthorized) {
-      return applySessionResult(NextResponse.redirect(loginUrl), result);
+      return recordHandoffEvent(
+        applySessionResult(NextResponse.redirect(loginUrl), result),
+        "storefront", "authorize", "login-required", state,
+      );
     }
     if (!result.response.ok) {
-      return applySessionResult(NextResponse.redirect(new URL("/auth/failed?reason=authorization", request.url)), result);
+      return recordHandoffEvent(
+        applySessionResult(NextResponse.redirect(new URL("/auth/failed?reason=authorization", request.url)), result),
+        "storefront", "authorize", "denied", state,
+      );
     }
 
     const body = await result.response.json() as { redirectUrl?: string };
@@ -51,11 +61,20 @@ export async function GET(request: NextRequest) {
       !callback.searchParams.get("code") ||
       [...callback.searchParams.keys()].sort().join(",") !== "code,state"
     ) {
-      return NextResponse.redirect(new URL("/auth/failed?reason=authorization", request.url));
+      return recordHandoffEvent(
+        NextResponse.redirect(new URL("/auth/failed?reason=authorization", request.url)),
+        "storefront", "authorize", "invalid-callback", state,
+      );
     }
 
-    return applySessionResult(NextResponse.redirect(callback), result);
+    return recordHandoffEvent(
+      applySessionResult(NextResponse.redirect(callback), result),
+      "storefront", "authorize", "issued", state,
+    );
   } catch {
-    return NextResponse.redirect(new URL("/auth/failed?reason=service", request.url));
+    return recordHandoffEvent(
+      NextResponse.redirect(new URL("/auth/failed?reason=service", request.url)),
+      "storefront", "authorize", "service", state,
+    );
   }
 }

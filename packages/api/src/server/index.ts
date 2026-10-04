@@ -9,3 +9,4 @@ export * from "./pkce";
 export * from "./return-path";
 export * from "./session-routes";
 export * from "./dashboard-handoff";
+export * from "./auth-diagnostics";

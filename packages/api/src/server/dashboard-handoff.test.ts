@@ -97,6 +97,7 @@ test("admin callback exchanges server-side and installs only a local session", a
   assert.equal(callback.cookies.get("ecom.access")?.httpOnly, true);
   assert.equal(callback.cookies.get("ecom.admin.handoff.state")?.maxAge, 0);
   assert.equal(callback.headers.get("location")?.includes("admin-access-test"), false);
+  assert.equal(callback.headers.get("X-Auth-Correlation-Id"), start.headers.get("X-Auth-Correlation-Id"));
 });
 
 test("vendor callback uses its own client and cookies", async () => {

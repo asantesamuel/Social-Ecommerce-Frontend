@@ -11,6 +11,7 @@ import { getFrontendOrigin, getHandoffClientConfig } from "./config";
 import { exchangeHandoff } from "./handoff";
 import { createHandoffValues, matchesState } from "./pkce";
 import { safeReturnPath } from "./return-path";
+import { recordHandoffEvent } from "./auth-diagnostics";
 
 const codePattern = /^[A-Za-z0-9_-]{43}$/;
 const statePattern = /^[A-Za-z0-9._~-]{16,256}$/;
@@ -27,7 +28,7 @@ function failure(request: NextRequest, app: HandoffApp, reason: string): NextRes
   const response = NextResponse.redirect(url);
   response.headers.set("Cache-Control", "no-store");
   clearHandoffCookies(response, app);
-  return response;
+  return recordHandoffEvent(response, app, "callback", reason, request.cookies.get(`ecom.${app}.handoff.state`)?.value);
 }
 
 export function startDashboardHandoff(request: NextRequest, app: HandoffApp): NextResponse {
@@ -50,7 +51,7 @@ export function startDashboardHandoff(request: NextRequest, app: HandoffApp): Ne
     const response = NextResponse.redirect(authorizeUrl);
     response.headers.set("Cache-Control", "no-store");
     setHandoffCookies(response, app, { ...values, returnTo });
-    return response;
+    return recordHandoffEvent(response, app, "start", "issued", values.state);
   } catch {
     return failure(request, app, "configuration");
   }
@@ -104,7 +105,7 @@ export async function completeDashboardHandoff(
     response.headers.set("Cache-Control", "no-store");
     clearHandoffCookies(response, app);
     setSessionCookies(response, session);
-    return response;
+    return recordHandoffEvent(response, app, "callback", "completed", values.state);
   } catch {
     return failure(request, app, "service");
   }
