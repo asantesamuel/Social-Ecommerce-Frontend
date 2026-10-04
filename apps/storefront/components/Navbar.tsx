@@ -2,22 +2,23 @@
 
 import { ShoppingBag, Globe, LogOut, UserRound } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, usePathname, useRouter } from "../i18n/routing";
 import { useCart } from "../hooks/useCart";
-import {
-  authApi,
-  clearAuthSession,
-  getRefreshToken,
-  hasAuthSession,
-} from "@repo/api";
+import { authApi } from "@repo/api";
 
 export default function Navbar() {
   const { cart } = useCart();
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const isAuthenticated = hasAuthSession();
+  const session = useQuery({
+    queryKey: ["auth-session"],
+    queryFn: authApi.session,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const isAuthenticated = Boolean(session.data?.user);
 
   const handleLangChange = (locale: string) => {
     router.replace(pathname, { locale });
@@ -25,11 +26,10 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await authApi.logout(getRefreshToken());
+      await authApi.logout();
     } catch {
       // Continue local logout even if the server cannot be reached.
     } finally {
-      clearAuthSession();
       queryClient.clear();
       router.replace("/login");
     }

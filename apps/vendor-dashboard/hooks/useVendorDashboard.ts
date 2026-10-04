@@ -7,9 +7,7 @@ import {
   authApi,
   buildLocalizedAppUrl,
   catalogApi,
-  clearAuthSession,
   getApiErrorMessage,
-  getRefreshToken,
   uploadsApi,
   vendorApi,
   type CreateProductPayload,
@@ -133,9 +131,8 @@ export const useVendorDashboard = () => {
   });
 
   const logoutMutation = useMutation({
-    mutationFn: () => authApi.logout(getRefreshToken()),
+    mutationFn: () => authApi.logout(),
     onSettled: () => {
-      clearAuthSession();
       const currentLocale = pathname.match(/^\/(en|es|fr)(\/|$)/)?.[1] ?? "en";
       window.location.href = buildLocalizedAppUrl(
         "storefront",

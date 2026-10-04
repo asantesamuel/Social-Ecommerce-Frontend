@@ -385,6 +385,11 @@ export default function SignupPage() {
               {registerErrorMessage}
             </p>
           )}
+          {vendorApplication.isSuccess && (
+            <p role="status" className="text-center text-sm font-bold text-[#1a6b4a]">
+              Application submitted. Your account remains a customer account until vendor access is granted.
+            </p>
+          )}
         </form>
 
         <p className="mt-6 text-center text-sm font-medium text-[#706b63]">

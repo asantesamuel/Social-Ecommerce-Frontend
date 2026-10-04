@@ -1,46 +1,28 @@
-import { apiClient, setApiAuthorizationHeader } from "./client";
-import { clearAuthCookies, getRefreshToken, setAuthCookies } from "./session";
+import axios from "axios";
 import type {
-  AuthResponse,
+  BrowserAuthResponse,
   LoginPayload,
   RegisterPayload,
-  UserRole,
+  User,
 } from "./types";
 
 export const authApi = {
-  async login(payload: LoginPayload): Promise<AuthResponse> {
-    const { data } = await apiClient.post<AuthResponse>("/auth/login", payload);
+  async login(payload: LoginPayload & { returnTo?: string; locale?: string }): Promise<BrowserAuthResponse> {
+    const { data } = await axios.post<BrowserAuthResponse>("/api/auth/login", payload);
     return data;
   },
 
-  async register(payload: RegisterPayload): Promise<AuthResponse> {
-    const { data } = await apiClient.post<AuthResponse>(
-      "/auth/register",
-      payload,
-    );
+  async register(payload: RegisterPayload): Promise<BrowserAuthResponse> {
+    const { data } = await axios.post<BrowserAuthResponse>("/api/auth/register", payload);
     return data;
   },
 
-  async logout(refreshToken = getRefreshToken()): Promise<void> {
-    if (refreshToken) {
-      await apiClient.post("/auth/logout", { refreshToken });
-    }
+  async session(): Promise<{ user: User | null }> {
+    const { data } = await axios.get<{ user: User | null }>("/api/auth/session");
+    return data;
   },
-};
 
-export const persistAuthSession = (
-  session: AuthResponse,
-  roleOverride?: UserRole,
-) => {
-  setAuthCookies({
-    accessToken: session.accessToken,
-    refreshToken: session.refreshToken,
-    userRole: roleOverride ?? session.user?.role,
-  });
-  setApiAuthorizationHeader(session.accessToken);
-};
-
-export const clearAuthSession = () => {
-  clearAuthCookies();
-  setApiAuthorizationHeader();
+  async logout(): Promise<void> {
+    await axios.post("/api/auth/logout");
+  },
 };

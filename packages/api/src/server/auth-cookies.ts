@@ -57,6 +57,10 @@ export function updateAccessCookie(response: NextResponse, accessToken: string) 
   response.cookies.set(SESSION_COOKIES.access, accessToken, cookieOptions(15 * 60));
 }
 
+export function updateRefreshCookie(response: NextResponse, refreshToken: string) {
+  response.cookies.set(SESSION_COOKIES.refresh, refreshToken, cookieOptions(7 * 24 * 60 * 60));
+}
+
 export function clearLegacyCookies(response: NextResponse) {
   for (const name of LEGACY_COOKIES) {
     response.cookies.set(name, "", { ...cookieOptions(0), maxAge: 0 });

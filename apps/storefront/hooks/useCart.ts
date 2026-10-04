@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { cartApi, hasAuthSession } from "@repo/api";
+import { authApi, cartApi } from "@repo/api";
 import { usePathname } from "../i18n/routing";
 
 export const useCart = () => {
@@ -8,10 +8,17 @@ export const useCart = () => {
   const isAuthPage =
     pathname.includes("/login") || pathname.includes("/signup");
 
+  const session = useQuery({
+    queryKey: ["auth-session"],
+    queryFn: authApi.session,
+    staleTime: 30_000,
+    retry: false,
+  });
+
   const cartQuery = useQuery({
     queryKey: ["cart"],
     queryFn: cartApi.getCart,
-    enabled: hasAuthSession() && !isAuthPage,
+    enabled: Boolean(session.data?.user) && !isAuthPage,
   });
 
   const addItem = useMutation({

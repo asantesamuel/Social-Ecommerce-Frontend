@@ -56,6 +56,11 @@ export type AuthResponse = {
   user?: AuthenticatedUser;
 };
 
+export type BrowserAuthResponse = {
+  user: AuthenticatedUser;
+  redirectTo?: string;
+};
+
 export type LoginPayload = {
   email: string;
   password: string;

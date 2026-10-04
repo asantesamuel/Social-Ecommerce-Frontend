@@ -5,8 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   authApi,
   buildLocalizedAppUrl,
-  clearAuthSession,
-  getRefreshToken,
 } from "@repo/api";
 
 export default function AdminLayout({
@@ -21,11 +19,10 @@ export default function AdminLayout({
 
   const handleLogout = async () => {
     try {
-      await authApi.logout(getRefreshToken());
+      await authApi.logout();
     } catch {
       // Proceed locally if the API is unavailable; the refresh token is still removed below.
     } finally {
-      clearAuthSession();
       queryClient.clear();
       window.location.href = buildLocalizedAppUrl(
         "storefront",

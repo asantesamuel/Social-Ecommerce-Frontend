@@ -2,9 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   authApi,
   getLocaleFromPath,
-  getRoleLandingUrl,
-  persistAuthSession,
-  setApiAuthorizationHeader,
   vendorApi,
   type RegisterPayload,
   type VendorDocumentType,
@@ -29,48 +26,23 @@ export const useAuth = () => {
   const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
-    mutationFn: authApi.login,
+    mutationFn: (credentials: { email: string; password: string }) =>
+      authApi.login({
+        ...credentials,
+        locale: getLocaleFromPath(window.location.pathname),
+        returnTo: new URLSearchParams(window.location.search).get("returnTo") ?? undefined,
+      }),
     onSuccess: (data) => {
-      persistAuthSession(data);
       queryClient.invalidateQueries();
-
-      const role = data.user?.role;
-      if (role === "admin") {
-        window.location.href = getRoleLandingUrl(
-          role,
-          getLocaleFromPath(window.location.pathname),
-        );
-      } else if (role === "vendor") {
-        window.location.href = getRoleLandingUrl(
-          role,
-          getLocaleFromPath(window.location.pathname),
-        );
-      } else {
-        router.push("/");
-      }
+      window.location.assign(data.redirectTo ?? `/${getLocaleFromPath(window.location.pathname)}`);
     },
   });
 
   const registerMutation = useMutation({
     mutationFn: (credentials: RegisterPayload) => authApi.register(credentials),
-    onSuccess: (data) => {
-      persistAuthSession(data);
+    onSuccess: () => {
       queryClient.invalidateQueries();
-
-      const role = data.user?.role;
-      if (role === "admin") {
-        window.location.href = getRoleLandingUrl(
-          role,
-          getLocaleFromPath(window.location.pathname),
-        );
-      } else if (role === "vendor") {
-        window.location.href = getRoleLandingUrl(
-          role,
-          getLocaleFromPath(window.location.pathname),
-        );
-      } else {
-        router.push("/");
-      }
+      router.push("/");
     },
   });
 
@@ -87,15 +59,13 @@ export const useAuth = () => {
       password,
       registrationNumber,
     }: VendorApplicationSignupPayload) => {
-      const session = await authApi.register({
+      await authApi.register({
         firstName,
         lastName,
         email,
         password,
         role: "customer",
       });
-
-      setApiAuthorizationHeader(session.accessToken);
 
       const vendorProfile = await vendorApi.submitApplication({
         businessName,
@@ -105,18 +75,10 @@ export const useAuth = () => {
         documents: [{ file: document, documentType }],
       });
 
-      return { session, vendorProfile };
+      return vendorProfile;
     },
-    onSuccess: ({ session }) => {
-      persistAuthSession(session, "vendor");
+    onSuccess: () => {
       queryClient.invalidateQueries();
-      window.location.href = getRoleLandingUrl(
-        "vendor",
-        getLocaleFromPath(window.location.pathname),
-      );
-    },
-    onError: () => {
-      setApiAuthorizationHeader();
     },
   });
 
