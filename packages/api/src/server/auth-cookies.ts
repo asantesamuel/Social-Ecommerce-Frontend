@@ -1,11 +1,12 @@
 import "server-only";
 import { NextRequest, NextResponse } from "next/server";
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, USER_ROLE_COOKIE } from "../cookies";
 import type { AuthResponse, UserRole } from "../types";
 
 export const SESSION_COOKIES = {
-  access: "ecom.access",
-  refresh: "ecom.refresh",
-  role: "ecom.role",
+  access: ACCESS_TOKEN_COOKIE,
+  refresh: REFRESH_TOKEN_COOKIE,
+  role: USER_ROLE_COOKIE,
 } as const;
 
 export const LEGACY_COOKIES = ["accessToken", "refreshToken", "userRole"] as const;

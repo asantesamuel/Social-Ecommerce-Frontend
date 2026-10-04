@@ -44,7 +44,10 @@ export async function POST(request: NextRequest) {
     const locale = body.locale && isSupportedLocale(body.locale) ? body.locale : "en";
     const continuation = safeReturnPath(body.returnTo, "");
     const hasHandoffContinuation = continuation.startsWith("/auth/authorize?");
-    let redirectTo = hasHandoffContinuation ? continuation : `/${locale}`;
+    const storefrontReturn = /^\/(en|es|fr)(?:[/?]|$)/.test(continuation)
+      ? continuation
+      : `/${locale}`;
+    let redirectTo = hasHandoffContinuation ? continuation : storefrontReturn;
 
     if (!hasHandoffContinuation && (session.user.role === "admin" || session.user.role === "vendor")) {
       const dashboard = session.user.role === "admin" ? "adminDashboard" : "vendorDashboard";

@@ -1,4 +1,3 @@
-import { buildLocalizedAppUrl } from "./config";
 import type { UserRole } from "./types";
 
 export type ProtectedApp = "storefront" | "adminDashboard" | "vendorDashboard";
@@ -36,21 +35,4 @@ export const getRequiredRoleForApp = (app: ProtectedApp): UserRole => {
   }
 
   return "customer";
-};
-
-export const getRoleLandingUrl = (
-  role: UserRole | string | undefined,
-  locale = "en",
-) => {
-  const normalizedRole = normalizeUserRole(role);
-
-  if (normalizedRole === "admin") {
-    return buildLocalizedAppUrl("adminDashboard", "/", locale);
-  }
-
-  if (normalizedRole === "vendor") {
-    return buildLocalizedAppUrl("vendorDashboard", "/", locale);
-  }
-
-  return buildLocalizedAppUrl("storefront", "/", locale);
 };

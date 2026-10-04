@@ -1,12 +1,7 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
-
 export const APP_URLS = {
-  storefront: process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3001",
-  adminDashboard:
-    process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL ?? "http://localhost:3002",
-  vendorDashboard:
-    process.env.NEXT_PUBLIC_VENDOR_DASHBOARD_URL ?? "http://localhost:3003",
+  storefront: process.env.NEXT_PUBLIC_STOREFRONT_URL,
+  adminDashboard: process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL,
+  vendorDashboard: process.env.NEXT_PUBLIC_VENDOR_DASHBOARD_URL,
 } as const;
 
 export const SUPPORTED_LOCALES = ["en", "es", "fr"] as const;
@@ -34,5 +29,13 @@ export const buildLocalizedAppUrl = (
       ? `/${normalizedLocale}`
       : `/${normalizedLocale}${normalizedPath}`;
 
-  return new URL(localizedPath, APP_URLS[app]).toString();
+  const configuredOrigin = APP_URLS[app];
+  if (!configuredOrigin) {
+    throw new Error(`Public origin is required for ${app}`);
+  }
+  const url = new URL(configuredOrigin);
+  if (url.pathname !== "/" || url.search || url.hash || url.username || url.password) {
+    throw new Error(`Public origin must be an exact origin for ${app}`);
+  }
+  return new URL(localizedPath, url).toString();
 };
