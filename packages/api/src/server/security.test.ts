@@ -82,3 +82,24 @@ test("server configuration requires exact registered URLs and matching clients",
   assert.throws(() => getHandoffClientConfig("admin-dashboard"));
   process.env.AUTH_HANDOFF_CALLBACK_URL = "https://admin.example.test/auth/callback";
 });
+
+test("separate localhost subdomains are available only outside production", () => {
+  const previousEnv = process.env.NODE_ENV;
+  const previousOrigin = process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL;
+  const previousCallback = process.env.AUTH_HANDOFF_CALLBACK_URL;
+  try {
+    process.env.NODE_ENV = "development";
+    process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL = "http://admin.localhost:3312";
+    process.env.AUTH_HANDOFF_CALLBACK_URL = "http://admin.localhost:3312/auth/callback";
+    assert.equal(getHandoffClientConfig("admin-dashboard").clientId, "admin-dashboard");
+    process.env.NODE_ENV = "production";
+    assert.throws(() => getHandoffClientConfig("admin-dashboard"));
+  } finally {
+    if (previousEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousEnv;
+    if (previousOrigin === undefined) delete process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL;
+    else process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL = previousOrigin;
+    if (previousCallback === undefined) delete process.env.AUTH_HANDOFF_CALLBACK_URL;
+    else process.env.AUTH_HANDOFF_CALLBACK_URL = previousCallback;
+  }
+});

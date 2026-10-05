@@ -24,9 +24,8 @@ function exactUrl(value: string | undefined, name: string): URL {
   }
 
   if (url.protocol !== "https:") {
-    const localhost = ["localhost", "127.0.0.1", "[::1]"].includes(
-      url.hostname,
-    );
+    const localhost = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
+      url.hostname.endsWith(".localhost");
     if (process.env.NODE_ENV === "production" || !localhost) {
       throw new Error(`${name} must use HTTPS`);
     }

@@ -59,8 +59,11 @@ would require a separate global logout protocol and is not part of this plan.
 
 ## Validation and rollback
 
-Use `npm test`, `npm run check-types`, `npm run lint`, `npm run build`, and
-`npm run test:e2e` locally. Verify in Chrome DevTools that the login JSON has
+Use `npm test`, `npm run check-types`, `npm run check-types:e2e`, `npm run lint`,
+`npm run build`, and `npm run test:e2e` locally. The browser suite starts three
+independent Next.js dev servers and a contract-shaped mock API on loopback
+hosts; it needs an installed Chrome browser and does not replace a real backend
+or production check. Verify in Chrome DevTools that the login JSON has
 no tokens, dashboard exchange has no browser request, and each hostname has
 its own host-only `HttpOnly; Secure; SameSite=Lax` cookies. Confirm that
 `/en/login` loads without redirects and direct dashboard visits never alternate
