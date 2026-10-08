@@ -49,5 +49,12 @@ export const useCart = () => {
     },
   });
 
-  return { cart: cartQuery, addItem, updateItem, removeItem, clearCart };
+  return {
+    session,
+    cart: cartQuery,
+    addItem,
+    updateItem,
+    removeItem,
+    clearCart,
+  };
 };

@@ -1,117 +1,129 @@
 "use client";
 
+import { useState } from "react";
+import { getApiErrorMessage } from "@repo/api";
 import { useAdminUsers, useUpdateUserStatus } from "../../../hooks/useAdmin";
-import React, { useState } from "react";
-import type { PaginatedResponse, User } from "@repo/api";
 
 export default function UsersManagementPage() {
-  const [roleFilter, setRoleFilter] = useState<string>("");
-  const {
-    data,
-    isLoading,
-    isError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useAdminUsers(roleFilter);
+  const [roleFilter, setRoleFilter] = useState("");
+  const usersQuery = useAdminUsers(roleFilter);
   const updateUserStatus = useUpdateUserStatus();
-
-  if (isLoading)
-    return (
-      <div className="flex h-full items-center justify-center p-8 text-2xl font-black">
-        FETCHING USERS...
-      </div>
-    );
-  if (isError)
-    return (
-      <div className="text-[#ff3b30] font-black text-2xl">
-        FAILED TO FETCH USERS
-      </div>
-    );
-
-  const users =
-    data?.pages.flatMap((page: PaginatedResponse<User>) => page.data) || [];
+  const users = usersQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
   const handleToggleStatus = (userId: string, currentStatus: boolean) => {
     if (
-      confirm(
+      window.confirm(
         `Are you sure you want to ${currentStatus ? "suspend" : "reactivate"} this user?`,
       )
-    ) {
+    )
       updateUserStatus.mutate({ userId, isActive: !currentStatus });
-    }
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex justify-between items-center">
+    <div className="grid gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter">
-            User Management
-          </h2>
-          <p className="text-gray-500 font-medium whitespace-nowrap">
-            Control platform access and roles.
-          </p>
+          <p className="jwso-kicker mb-2">Access management</p>
+          <h1 className="jwso-page-title">Users</h1>
+          <p className="jwso-copy mt-2">Review accounts and manage access.</p>
         </div>
-        <select
-          aria-label="User Role Filter"
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="bg-transparent border border-[#e4e4e7] dark:border-white/20 rounded-xl px-4 py-2 font-bold uppercase text-sm outline-none"
-        >
-          <option value="">All Roles</option>
-          <option value="customer">Customers</option>
-          <option value="vendor">Vendors</option>
-          <option value="admin">Admins</option>
-        </select>
+        <div className="jwso-field w-full sm:w-48">
+          <label htmlFor="role-filter" className="jwso-label">
+            Role
+          </label>
+          <select
+            id="role-filter"
+            className="jwso-select"
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
+          >
+            <option value="">All roles</option>
+            <option value="customer">Customers</option>
+            <option value="vendor">Vendors</option>
+            <option value="admin">Admins</option>
+          </select>
+        </div>
       </header>
-
-      <div className="glass-card p-0 overflow-hidden text-sm md:text-base">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      {updateUserStatus.isError && (
+        <p className="jwso-alert" data-tone="error" role="alert">
+          {getApiErrorMessage(
+            updateUserStatus.error,
+            "Access could not be updated. Please try again.",
+          )}
+        </p>
+      )}
+      {usersQuery.isLoading ? (
+        <div
+          className="jwso-skeleton h-52 rounded-[6px]"
+          aria-label="Loading users"
+        />
+      ) : usersQuery.isError ? (
+        <div className="jwso-empty" role="alert">
+          <h2 className="jwso-section-title">Users unavailable</h2>
+          <p>Account data could not be loaded.</p>
+          <button
+            type="button"
+            onClick={() => usersQuery.refetch()}
+            className="jwso-button"
+          >
+            Retry
+          </button>
+        </div>
+      ) : users.length === 0 ? (
+        <div className="jwso-empty">
+          <h2 className="jwso-section-title">No users found</h2>
+          <p>Try a different role filter.</p>
+          <button
+            type="button"
+            onClick={() => setRoleFilter("")}
+            className="jwso-button"
+          >
+            Show all roles
+          </button>
+        </div>
+      ) : (
+        <div className="jwso-table-wrap">
+          <table className="jwso-table">
             <thead>
-              <tr className="bg-gray-50 dark:bg-white/5 border-b border-[#f4f4f5] dark:border-white/10 uppercase text-xs tracking-wider font-bold text-gray-500">
-                <th className="p-4">Name</th>
-                <th className="p-4">Email</th>
-                <th className="p-4">Role</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Actions</th>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Status</th>
+                <th scope="col" className="jwso-table__right">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user: User) => (
-                <tr
-                  key={user.id}
-                  className="border-b border-[#f4f4f5] dark:border-white/10 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                >
-                  <td className="p-4 font-bold">
-                    {user.firstName || "Unknown"} {user.lastName || "User"}
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td className="font-semibold">
+                    {[user.firstName, user.lastName]
+                      .filter(Boolean)
+                      .join(" ") || "Name unavailable"}
                   </td>
-                  <td className="p-4 text-gray-600 dark:text-gray-400 font-medium">
-                    {user.email}
-                  </td>
-                  <td className="p-4">
-                    <span className="text-xs font-bold uppercase px-2 py-1 bg-black text-white dark:bg-white dark:text-black rounded-full">
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="p-4">
+                  <td>{user.email}</td>
+                  <td className="capitalize">{user.role}</td>
+                  <td>
                     <span
-                      className={`text-xs font-bold uppercase px-2 py-1 rounded-full ${(user.isActive ?? false) ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                      className="jwso-status"
+                      data-tone={user.isActive ? "success" : "error"}
                     >
-                      {(user.isActive ?? false) ? "Active" : "Suspended"}
+                      {user.isActive ? "Active" : "Suspended"}
                     </span>
                   </td>
-                  <td className="p-4 text-right">
+                  <td className="jwso-table__right">
                     {user.role !== "admin" && (
                       <button
+                        type="button"
                         onClick={() =>
                           handleToggleStatus(user.id, user.isActive ?? false)
                         }
                         disabled={updateUserStatus.isPending}
-                        className={`text-xs font-bold uppercase px-4 py-2 rounded-xl transition-all ${(user.isActive ?? false) ? "border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30] hover:text-white" : "border border-green-600 text-green-600 hover:bg-green-600 hover:text-white"}`}
+                        className={`jwso-button ${user.isActive ? "jwso-button--danger" : "jwso-button--secondary"}`}
                       >
-                        {(user.isActive ?? false) ? "Suspend" : "Reactivate"}
+                        {user.isActive ? "Suspend" : "Reactivate"}
                       </button>
                     )}
                   </td>
@@ -120,15 +132,15 @@ export default function UsersManagementPage() {
             </tbody>
           </table>
         </div>
-      </div>
-
-      {hasNextPage && (
+      )}
+      {usersQuery.hasNextPage && (
         <button
-          onClick={() => fetchNextPage()}
-          disabled={isFetchingNextPage}
-          className="mx-auto w-full max-w-sm py-4 border-2 border-black dark:border-white rounded-2xl font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+          type="button"
+          onClick={() => usersQuery.fetchNextPage()}
+          disabled={usersQuery.isFetchingNextPage}
+          className="jwso-button jwso-button--secondary mx-auto"
         >
-          {isFetchingNextPage ? "Loading..." : "Load More Users"}
+          {usersQuery.isFetchingNextPage ? "Loading…" : "Load more users"}
         </button>
       )}
     </div>

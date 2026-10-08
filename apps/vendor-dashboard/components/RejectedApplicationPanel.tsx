@@ -1,7 +1,7 @@
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { VendorProfile } from "@repo/api";
 
-type RejectedApplicationPanelProps = {
+type Props = {
   reapplyMessage: string | null;
   reapplyMutation: UseMutationResult<
     { message?: string },
@@ -16,66 +16,56 @@ export default function RejectedApplicationPanel({
   reapplyMessage,
   reapplyMutation,
   vendorProfile,
-}: RejectedApplicationPanelProps) {
+}: Props) {
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <div className="glass-card border-l-[8px] border-[#ff3b30] p-8 shadow-sm">
-        <h2 className="mb-4 text-3xl font-black uppercase tracking-tighter text-[#111]">
-          Application Rejected
-        </h2>
-        <p className="mb-6 text-lg font-medium text-minimal-gray">
-          Your vendor application was reviewed and needs changes before it can
-          be approved.
+    <section className="max-w-[650px]" aria-labelledby="rejected-heading">
+      <p className="jwso-kicker mb-2">Onboarding · Decision</p>
+      <h2 id="rejected-heading" className="jwso-section-title">
+        Your application needs changes
+      </h2>
+      <p className="jwso-copy mt-3">
+        Your vendor application was reviewed but cannot be approved in its
+        current form.
+      </p>
+      <div className="jwso-alert mt-6" data-tone="error">
+        <p className="jwso-label">Reason</p>
+        <p className="jwso-copy mt-1">
+          {vendorProfile.rejectionReason || "No reason was provided."}
         </p>
-        <div className="rounded-2xl border border-[#f1f1f1] bg-[#fafafa] p-5">
-          <p className="mb-2 text-xs font-black uppercase tracking-widest text-[#777]">
-            Rejection Reason
-          </p>
-          <p className="font-medium leading-relaxed text-[#111]">
-            {vendorProfile.rejectionReason ||
-              "No rejection reason was provided."}
-          </p>
-        </div>
-        {vendorProfile.reapplyDeadline && (
-          <p className="mt-5 text-sm font-medium text-minimal-gray">
-            Reapply window:{" "}
-            <strong className="text-[#111]">
-              {new Date(vendorProfile.reapplyDeadline).toLocaleDateString()}
-            </strong>
-          </p>
-        )}
       </div>
-
-      <div className="glass-card border border-[#eaeaea] bg-white p-8">
-        <h3 className="mb-4 text-xl font-bold uppercase tracking-tight">
-          {vendorProfile.canReapplyWithoutFee
-            ? "Reopen Application"
-            : "Restart Application"}
-        </h3>
-        <p className="mb-6 text-sm font-medium text-minimal-gray">
-          {vendorProfile.canReapplyWithoutFee
-            ? "You are still inside the reapply window, so you can continue without paying the onboarding fee again."
-            : "Your reapply window has expired. Restarting will move your application back to payment so you can pay the onboarding fee again."}
+      {vendorProfile.reapplyDeadline && (
+        <p className="jwso-copy mt-4 text-sm">
+          Reapply by{" "}
+          {new Date(vendorProfile.reapplyDeadline).toLocaleDateString()} to use
+          the current reapplication window.
         </p>
-
-        <button
-          onClick={() => reapplyMutation.mutate()}
-          disabled={reapplyMutation.isPending}
-          className="btn-dopamine w-full py-4 text-lg text-white disabled:opacity-50"
+      )}
+      <p className="jwso-copy mt-5 text-sm">
+        {vendorProfile.canReapplyWithoutFee
+          ? "You can resubmit without another onboarding payment during this window."
+          : "Your reapplication window has ended. Restarting will return you to the payment step."}
+      </p>
+      <button
+        type="button"
+        onClick={() => reapplyMutation.mutate()}
+        disabled={reapplyMutation.isPending}
+        className="jwso-button mt-5"
+      >
+        {reapplyMutation.isPending
+          ? "Updating application…"
+          : vendorProfile.canReapplyWithoutFee
+            ? "Reapply without payment"
+            : "Restart application"}
+      </button>
+      {reapplyMessage && (
+        <p
+          className="jwso-alert mt-4"
+          data-tone={reapplyMutation.isError ? "error" : "success"}
+          role="status"
         >
-          {reapplyMutation.isPending
-            ? "Updating Application..."
-            : vendorProfile.canReapplyWithoutFee
-              ? "Reapply Without Paying Again"
-              : "Restart And Return To Payment"}
-        </button>
-
-        {reapplyMessage && (
-          <p className="mt-4 text-sm font-medium text-minimal-gray">
-            {reapplyMessage}
-          </p>
-        )}
-      </div>
-    </div>
+          {reapplyMessage}
+        </p>
+      )}
+    </section>
   );
 }

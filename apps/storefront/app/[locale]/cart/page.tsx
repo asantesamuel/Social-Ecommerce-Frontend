@@ -1,172 +1,192 @@
 "use client";
 
-import { useCart } from "../../../hooks/useCart";
+/* eslint-disable @next/next/no-img-element -- Cart media uses vendor-provided URLs. */
+
 import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react";
+import { formatCurrency, getApiErrorMessage } from "@repo/api";
+import { useCart } from "../../../hooks/useCart";
 import { Link } from "../../../i18n/routing";
-import Image from "next/image";
-import { formatCurrency, type CartItem } from "@repo/api";
 
 export default function CartPage() {
-  const { cart, updateItem, removeItem, clearCart } = useCart();
-
-  if (cart.isLoading)
-    return (
-      <div className="p-24 flex justify-center">
-        <div className="animate-pulse h-96 w-full max-w-4xl bg-black/5 dark:bg-white/5 rounded-3xl" />
-      </div>
-    );
-  if (!cart.data)
-    return (
-      <div className="p-24 text-center font-bold text-minimal-gray">
-        Failed to load cart
-      </div>
-    );
-
-  const cartData = cart.data;
-  const items = cartData.items || [];
-  const subtotal = cartData.subtotal || 0;
+  const { session, cart, updateItem, removeItem, clearCart } = useCart();
+  const items = cart.data?.items ?? [];
+  const operationError =
+    updateItem.error || removeItem.error || clearCart.error;
 
   return (
-    <div className="container mx-auto px-4 pt-24 pb-12 flex-1 max-w-6xl relative z-10 w-full">
+    <main className="jwso-page jwso-container w-full max-w-[1160px] flex-1">
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-minimal-gray hover:text-foreground transition-colors mb-12 font-medium tracking-wide"
+        className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--jwso-muted)] hover:text-[var(--jwso-brand)]"
       >
-        <ArrowLeft size={20} /> Continue Shopping
+        <ArrowLeft size={16} aria-hidden="true" /> Continue shopping
       </Link>
-
-      <div className="flex items-end justify-between mb-8 pb-6 border-b border-black/5 dark:border-white/10">
-        <h1 className="text-5xl font-black tracking-tighter">Your Cart</h1>
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-3 border-b border-[var(--jwso-line)] pb-5">
+        <h1 className="jwso-page-title">Your cart</h1>
         {items.length > 0 && (
           <button
+            type="button"
             onClick={() => clearCart.mutate()}
-            className="text-xs font-black text-minimal-red hover:text-minimal-redDark uppercase tracking-[0.2em] flex items-center gap-2 transition-colors cursor-pointer"
+            disabled={clearCart.isPending}
+            className="jwso-button jwso-button--quiet"
           >
-            Clear Cart
+            Clear cart
           </button>
         )}
       </div>
-
-      {items.length === 0 ? (
-        <div className="glass-card py-32 cursor-default text-center flex flex-col items-center gap-6 shadow-sm border-0 border-transparent rounded-3xl">
-          <div className="w-32 h-32 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center mb-2">
-            <Trash2 className="text-minimal-gray opacity-30" size={48} />
-          </div>
-          <h2 className="text-3xl font-black tracking-tight">
-            Your cart is empty.
-          </h2>
-          <p className="text-minimal-gray text-lg font-medium">
-            Looks like you have not added anything to your cart yet.
-          </p>
-          <Link
-            href="/"
-            className="mt-6 bg-foreground text-background px-10 py-4 rounded-xl font-bold hover:shadow-xl hover:-translate-y-1 transition-all active:scale-[0.98]"
+      {session.isLoading || (session.data?.user && cart.isLoading) ? (
+        <div
+          className="jwso-skeleton h-48 rounded-[6px]"
+          aria-label="Loading cart"
+        />
+      ) : !session.data?.user ? (
+        <div className="jwso-empty">
+          <h2 className="jwso-section-title">Sign in to see your cart</h2>
+          <p>Your cart is linked to your account.</p>
+          <Link href="/login" className="jwso-button">
+            Sign in
+          </Link>
+        </div>
+      ) : cart.isError ? (
+        <div className="jwso-empty" role="alert">
+          <h2 className="jwso-section-title">Your cart could not be loaded</h2>
+          <p>Your items have not been changed. Please try again.</p>
+          <button
+            type="button"
+            onClick={() => cart.refetch()}
+            className="jwso-button"
           >
-            Start Shopping
+            Retry
+          </button>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="jwso-empty">
+          <h2 className="jwso-section-title">Your cart is empty</h2>
+          <p>Explore JWSO and add products you like.</p>
+          <Link href="/" className="jwso-button">
+            Browse products
           </Link>
         </div>
       ) : (
-        <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
-          <div className="flex flex-col gap-6">
-            {items.map((item: CartItem) => (
-              <div
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 border-t border-[var(--jwso-line)]">
+            {items.map((item) => (
+              <article
                 key={item.id}
-                className="glass-card flex flex-col sm:flex-row gap-6 p-6 rounded-3xl shadow-sm hover:shadow-lg transition-shadow"
+                className="flex gap-4 border-b border-[var(--jwso-line)] py-5 sm:gap-6"
               >
-                <div className="w-full sm:w-32 aspect-square bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 rounded-2xl flex-shrink-0 relative overflow-hidden mix-blend-multiply dark:mix-blend-normal">
-                  {item.product?.imageUrls?.[0] && (
-                    <Image
-                      src={item.product?.imageUrls?.[0]}
-                      alt={
-                        item.productName ||
-                        item.product?.name ||
-                        "Product Image"
-                      }
-                      fill
-                      className="object-cover"
+                <div className="h-24 w-20 flex-none overflow-hidden rounded-[4px] bg-[var(--jwso-surface-soft)] sm:h-32 sm:w-28">
+                  {item.product?.imageUrls?.[0] ? (
+                    <img
+                      src={item.product.imageUrls[0]}
+                      alt={item.productName || item.product.name}
+                      className="h-full w-full object-cover"
                     />
+                  ) : (
+                    <div className="grid h-full place-items-center p-2 text-center text-xs text-[var(--jwso-muted)]">
+                      No image
+                    </div>
                   )}
                 </div>
-                <div className="flex-1 flex flex-col justify-center">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-bold text-xl tracking-tight leading-none">
-                      {item.productName || item.product?.name}
-                    </h3>
-                    <div className="font-black text-2xl text-foreground ml-4">
-                      {formatCurrency(item.unitPrice)}
+                <div className="flex min-w-0 flex-1 flex-col justify-between gap-3">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <h2 className="min-w-0 font-semibold">
+                      {item.productName || item.product?.name || "Product"}
+                    </h2>
+                    <div className="text-right">
+                      <p className="jwso-price">
+                        {formatCurrency(Number(item.unitPrice) * item.quantity)}
+                      </p>
+                      <p className="jwso-meta">
+                        {formatCurrency(item.unitPrice)} each
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-black/5 dark:border-white/5">
-                    <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 rounded-xl px-2 py-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="inline-flex h-[38px] items-center border border-[var(--jwso-line)] bg-white">
                       <button
-                        aria-label="Decrease quantity"
+                        type="button"
                         onClick={() =>
                           updateItem.mutate({
                             itemId: item.id,
                             quantity: Math.max(1, item.quantity - 1),
                           })
                         }
-                        className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg outline-none cursor-pointer disabled:opacity-50"
+                        disabled={item.quantity <= 1 || updateItem.isPending}
+                        className="jwso-icon-button jwso-icon-button--secondary !h-[36px] !min-h-[36px] !w-[36px] !flex-none !border-0"
+                        aria-label={`Decrease ${item.productName || "product"} quantity`}
                       >
-                        <Minus size={16} />
+                        <Minus size={15} />
                       </button>
-                      <span className="font-black text-base w-4 text-center">
+                      <span className="w-7 text-center text-sm font-semibold tabular-nums">
                         {item.quantity}
                       </span>
                       <button
-                        aria-label="Increase quantity"
+                        type="button"
                         onClick={() =>
                           updateItem.mutate({
                             itemId: item.id,
                             quantity: item.quantity + 1,
                           })
                         }
-                        className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg outline-none cursor-pointer"
+                        disabled={updateItem.isPending}
+                        className="jwso-icon-button jwso-icon-button--secondary !h-[36px] !min-h-[36px] !w-[36px] !flex-none !border-0"
+                        aria-label={`Increase ${item.productName || "product"} quantity`}
                       >
-                        <Plus size={16} />
+                        <Plus size={15} />
                       </button>
                     </div>
                     <button
-                      aria-label="Remove item"
+                      type="button"
                       onClick={() => removeItem.mutate(item.id)}
-                      className="text-minimal-gray hover:text-minimal-red hover:bg-minimal-red/10 transition-colors p-3 rounded-xl cursor-pointer"
+                      disabled={removeItem.isPending}
+                      className="jwso-icon-button jwso-icon-button--secondary"
+                      aria-label={`Remove ${item.productName || "product"}`}
+                      title="Remove item"
                     >
-                      <Trash2 size={20} />
+                      <Trash2 size={17} />
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
+            {operationError && (
+              <p className="jwso-alert mt-4" data-tone="error" role="alert">
+                {getApiErrorMessage(
+                  operationError,
+                  "Cart could not be updated. Please try again.",
+                )}
+              </p>
+            )}
           </div>
-
-          <div className="glass-card shadow-2xl border-black/5 dark:border-white/10 sticky top-32 p-8 text-foreground rounded-3xl">
-            <h2 className="text-2xl font-bold mb-8 tracking-tight">
-              Order Summary
-            </h2>
-            <div className="flex justify-between items-center mb-6 text-minimal-gray font-medium text-lg">
-              <span>Subtotal ({items.length} items)</span>
-              <span className="text-foreground tracking-tight">
-                {formatCurrency(subtotal)}
-              </span>
+          <aside
+            className="jwso-panel lg:sticky lg:top-24"
+            aria-label="Cart summary"
+          >
+            <div className="jwso-panel__header">
+              <h2 className="jwso-section-title">Summary</h2>
             </div>
-            <div className="flex justify-between items-center mb-8 text-minimal-gray font-medium text-lg">
-              <span>Shipping</span>
-              <span className="text-foreground font-bold tracking-tight">
-                Free
-              </span>
+            <div className="jwso-panel__body">
+              <div className="flex justify-between gap-3">
+                <span className="jwso-copy">Subtotal</span>
+                <strong className="jwso-price">
+                  {formatCurrency(cart.data?.subtotal ?? 0)}
+                </strong>
+              </div>
+              <p className="jwso-help mt-3">
+                Shipping and final charges are not calculated here.
+              </p>
+              <div className="jwso-alert mt-6" data-tone="warning">
+                <strong>Checkout is not available yet.</strong>
+                <p className="mt-1 text-sm">
+                  You can save items in your cart while purchasing is being
+                  prepared.
+                </p>
+              </div>
             </div>
-            <div className="border-t border-black/10 dark:border-white/10 pt-8 flex justify-between items-center mb-10">
-              <span className="font-black text-2xl tracking-tight">Total</span>
-              <span className="font-black text-4xl text-minimal-red tracking-tighter">
-                {formatCurrency(subtotal)}
-              </span>
-            </div>
-            <button className="w-full btn-dopamine py-6 text-xl outline-none">
-              SECURE CHECKOUT
-            </button>
-          </div>
+          </aside>
         </div>
       )}
-    </div>
+    </main>
   );
 }

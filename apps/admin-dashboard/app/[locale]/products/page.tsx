@@ -1,195 +1,204 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- Moderation previews come from dynamic upload URLs. */
+/* eslint-disable @next/next/no-img-element -- Moderation previews use vendor-provided URLs. */
 
+import { useState } from "react";
+import { formatCurrency, getApiErrorMessage } from "@repo/api";
 import {
   useAdminPendingProducts,
   useModerateProduct,
 } from "../../../hooks/useAdmin";
-import React, { useState } from "react";
-import {
-  formatCurrency,
-  type PaginatedResponse,
-  type Product,
-} from "@repo/api";
 
 export default function ModerationQueuePage() {
-  const {
-    data,
-    isLoading,
-    isError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useAdminPendingProducts();
-  const moderateProduct = useModerateProduct();
-  const [rejectReason, setRejectReason] = useState<{ [key: string]: string }>(
-    {},
-  );
-
-  if (isLoading)
-    return (
-      <div className="flex h-full items-center justify-center p-8 text-2xl font-black">
-        FETCHING MANIFESTS...
-      </div>
-    );
-  if (isError)
-    return (
-      <div className="text-[#ff3b30] font-black text-2xl">
-        FAILED TO FETCH QUEUE
-      </div>
-    );
-
-  const products =
-    (data?.pages as PaginatedResponse<Product>[] | undefined)?.flatMap(
-      (page) => page.data,
-    ) || [];
+  const productsQuery = useAdminPendingProducts();
+  const moderate = useModerateProduct();
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [reasonRequired, setReasonRequired] = useState<string | null>(null);
+  const products = productsQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
   const handleAction = (
     productId: string,
     action: "approve" | "reject" | "flag",
   ) => {
-    let reason;
-    if (action !== "approve") {
-      reason = rejectReason[productId];
-      if (!reason) {
-        alert("Please provide a reason before rejecting or flagging.");
-        return;
-      }
+    const reason = reasons[productId]?.trim();
+    if (action !== "approve" && !reason) {
+      setReasonRequired(productId);
+      return;
     }
-
-    moderateProduct.mutate(
+    setReasonRequired(null);
+    moderate.mutate(
       { productId, action, reason },
       {
-        onSuccess: () => {
-          setRejectReason((prev) => {
-            const newState = { ...prev };
-            delete newState[productId];
-            return newState;
-          });
-        },
+        onSuccess: () =>
+          setReasons((current) => {
+            const next = { ...current };
+            delete next[productId];
+            return next;
+          }),
       },
     );
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="grid gap-6">
       <header>
-        <h2 className="text-4xl font-black uppercase tracking-tighter">
-          Needs Review
-        </h2>
-        <p className="text-gray-500 font-medium">
-          Moderate incoming vendor product listings.
+        <p className="jwso-kicker mb-2">Listing quality</p>
+        <h1 className="jwso-page-title">Product moderation</h1>
+        <p className="jwso-copy mt-2">
+          Review listings before they appear in the marketplace.
         </p>
       </header>
-
-      {products.length === 0 ? (
-        <div className="glass-card flex flex-col items-center justify-center py-24 text-center">
-          <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">
-            Inbox Zero
-          </h3>
-          <p className="text-gray-500 font-medium max-w-sm">
-            There are no pending products awaiting your review.
-          </p>
+      {moderate.isError && (
+        <p className="jwso-alert" data-tone="error" role="alert">
+          {getApiErrorMessage(
+            moderate.error,
+            "The review could not be saved. Please try again.",
+          )}
+        </p>
+      )}
+      {productsQuery.isLoading ? (
+        <div
+          className="jwso-skeleton h-52 rounded-[6px]"
+          aria-label="Loading product queue"
+        />
+      ) : productsQuery.isError ? (
+        <div className="jwso-empty" role="alert">
+          <h2 className="jwso-section-title">Review queue unavailable</h2>
+          <p>Pending products could not be loaded.</p>
+          <button
+            type="button"
+            onClick={() => productsQuery.refetch()}
+            className="jwso-button"
+          >
+            Retry
+          </button>
+        </div>
+      ) : products.length === 0 ? (
+        <div className="jwso-empty">
+          <h2 className="jwso-section-title">No products awaiting review</h2>
+          <p>New vendor listings will appear here.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 divide-y divide-[#f4f4f5] dark:divide-white/10 glass-card p-0 overflow-hidden">
+        <div className="divide-y divide-[var(--jwso-line)] border-y border-[var(--jwso-line)]">
           {products.map((product) => (
-            <div
+            <article
               key={product.id}
-              className="p-6 md:p-8 flex flex-col md:flex-row gap-8"
+              className="grid gap-5 py-6 sm:grid-cols-[112px_minmax(0,1fr)]"
             >
-              {/* Product Image / Visual Placeholder */}
-              <div className="w-full md:w-48 h-48 bg-gray-100 dark:bg-white/5 rounded-2xl flex-shrink-0 flex items-center justify-center overflow-hidden">
+              <div className="h-28 w-28 overflow-hidden rounded-[4px] bg-[var(--jwso-surface-soft)]">
                 {product.imageUrls?.[0] ? (
                   <img
                     src={product.imageUrls[0]}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="text-xs font-bold uppercase text-gray-400">
-                    No Image
+                  <span className="grid h-full place-items-center text-xs text-[var(--jwso-muted)]">
+                    No image
                   </span>
                 )}
               </div>
-
-              {/* Details */}
-              <div className="flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-2xl font-black">{product.name}</h3>
-                  <span className="text-2xl font-black text-[#ff3b30]">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <h2 className="jwso-section-title">{product.name}</h2>
+                  <strong className="jwso-price">
                     {formatCurrency(product.price)}
-                  </span>
+                  </strong>
                 </div>
-                <p className="text-sm text-gray-500 font-medium mb-4 flex-1">
-                  {product.description}
-                </p>
-
-                <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest text-gray-400 mb-6">
-                  <div className="bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">
-                    Category: {product.category?.name || "Uncategorized"}
+                <p className="jwso-copy mt-2 text-sm">{product.description}</p>
+                <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                  <div>
+                    <dt className="inline text-[var(--jwso-muted)]">
+                      Vendor:{" "}
+                    </dt>
+                    <dd className="inline font-semibold">
+                      {product.vendor?.companyName ||
+                        product.vendor?.businessName ||
+                        "Unavailable"}
+                    </dd>
                   </div>
-                  <div className="bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">
-                    Vendor: {product.vendor?.companyName || "Unknown"}
+                  <div>
+                    <dt className="inline text-[var(--jwso-muted)]">
+                      Category:{" "}
+                    </dt>
+                    <dd className="inline">
+                      {product.category?.name || "Uncategorized"}
+                    </dd>
                   </div>
-                  <div className="bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">
-                    Stock: {product.stockQuantity ?? 0}
+                  <div>
+                    <dt className="inline text-[var(--jwso-muted)]">Stock: </dt>
+                    <dd className="inline tabular-nums">
+                      {product.stockQuantity ?? 0}
+                    </dd>
                   </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-center">
+                </dl>
+                <div className="mt-5 flex flex-wrap items-end gap-2">
                   <button
+                    type="button"
                     onClick={() => handleAction(product.id, "approve")}
-                    disabled={moderateProduct.isPending}
-                    className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-widest text-xs rounded-xl hover:opacity-80 transition-opacity"
+                    disabled={moderate.isPending}
+                    className="jwso-button"
                   >
-                    Approve Drops
+                    Approve
                   </button>
-
-                  <div className="flex flex-1 gap-2">
+                  <div className="jwso-field min-w-[180px] flex-1">
+                    <label
+                      htmlFor={`reason-${product.id}`}
+                      className="jwso-label"
+                    >
+                      Reason for rejection or flag
+                    </label>
                     <input
-                      type="text"
-                      placeholder="Reason for Rejection/Flag..."
-                      value={rejectReason[product.id] || ""}
-                      onChange={(e) =>
-                        setRejectReason((prev) => ({
-                          ...prev,
-                          [product.id]: e.target.value,
+                      id={`reason-${product.id}`}
+                      className="jwso-input"
+                      value={reasons[product.id] ?? ""}
+                      onChange={(event) =>
+                        setReasons((current) => ({
+                          ...current,
+                          [product.id]: event.target.value,
                         }))
                       }
-                      className="flex-1 bg-transparent border border-[#e4e4e7] dark:border-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                      aria-invalid={reasonRequired === product.id}
                     />
-                    <button
-                      onClick={() => handleAction(product.id, "reject")}
-                      disabled={moderateProduct.isPending}
-                      className="px-6 py-3 border border-red-500 text-red-500 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-red-500 hover:text-white transition-colors"
-                    >
-                      Reject
-                    </button>
-                    <button
-                      onClick={() => handleAction(product.id, "flag")}
-                      disabled={moderateProduct.isPending}
-                      className="px-6 py-3 border border-orange-500 text-orange-500 font-black uppercase tracking-widest text-xs rounded-xl hover:bg-orange-500 hover:text-white transition-colors"
-                    >
-                      Flag
-                    </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAction(product.id, "reject")}
+                    disabled={moderate.isPending}
+                    className="jwso-button jwso-button--danger"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAction(product.id, "flag")}
+                    disabled={moderate.isPending}
+                    className="jwso-button jwso-button--secondary"
+                  >
+                    Flag
+                  </button>
                 </div>
+                {reasonRequired === product.id && (
+                  <p
+                    className="mt-2 text-sm text-[var(--jwso-error)]"
+                    role="alert"
+                  >
+                    Enter a reason before rejecting or flagging.
+                  </p>
+                )}
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
-
-      {hasNextPage && (
+      {productsQuery.hasNextPage && (
         <button
-          onClick={() => fetchNextPage()}
-          disabled={isFetchingNextPage}
-          className="mx-auto w-full max-w-sm py-4 border-2 border-black dark:border-white rounded-2xl font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+          type="button"
+          onClick={() => productsQuery.fetchNextPage()}
+          disabled={productsQuery.isFetchingNextPage}
+          className="jwso-button jwso-button--secondary mx-auto"
         >
-          {isFetchingNextPage ? "Loading..." : "Load More Pending Products"}
+          {productsQuery.isFetchingNextPage ? "Loading…" : "Load more products"}
         </button>
       )}
     </div>

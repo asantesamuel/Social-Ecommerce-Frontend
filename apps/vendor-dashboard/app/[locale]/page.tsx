@@ -12,88 +12,105 @@ export default function VendorDashboardPage() {
   const dashboard = useVendorDashboard();
   const { vendorQuery } = dashboard;
 
-  if (vendorQuery.isLoading) {
+  if (vendorQuery.isLoading)
     return (
-      <div className="flex h-screen items-center justify-center p-8 text-2xl font-black">
-        LOADING COMMAND CENTER...
-      </div>
-    );
-  }
-
-  if (vendorQuery.isError || !vendorQuery.data) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 text-[#ff3b30]">
-        <h2 className="text-4xl font-black">UNAUTHORIZED</h2>
-        <p className="mt-4 text-minimal-gray">
-          No vendor profile found for this user.
-        </p>
-      </div>
-    );
-  }
-
-  const vendorProfile = vendorQuery.data;
-  const status = vendorProfile.status;
-
-  return (
-    <div className="min-h-screen bg-[#fafafa] p-8 lg:p-16">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8">
-        {dashboard.paystackReturnDetected && (
-          <PaymentReturnNotice
-            isSyncingPayment={dashboard.isSyncingPayment}
-            paymentMessage={dashboard.paymentMessage}
-            paymentReference={dashboard.paymentReference}
-          />
-        )}
-
-        <VendorHeader
-          logoutMutation={dashboard.logoutMutation}
-          vendorProfile={vendorProfile}
+      <main className="jwso-container jwso-page">
+        <div
+          className="jwso-skeleton h-40 rounded-[6px]"
+          aria-label="Loading vendor workspace"
         />
+      </main>
+    );
+  if (vendorQuery.isError || !vendorQuery.data)
+    return (
+      <main className="jwso-container jwso-page">
+        <div className="jwso-empty" role="alert">
+          <h1 className="jwso-section-title">Vendor profile unavailable</h1>
+          <p>
+            We could not load your vendor profile. Please check your account or
+            try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => vendorQuery.refetch()}
+            className="jwso-button"
+          >
+            Retry
+          </button>
+        </div>
+      </main>
+    );
 
-        {status === "pending_payment" && (
-          <PaymentGate
-            currency={dashboard.currency}
-            paymentMessage={dashboard.paymentMessage}
-            payFeeMutation={dashboard.payFeeMutation}
-            setCurrency={dashboard.setCurrency}
-          />
-        )}
-
-        {status === "pending_review" && (
-          <DocumentUploadPanel
-            documentType={dashboard.documentType}
-            selectedFile={dashboard.selectedFile}
-            setDocumentType={dashboard.setDocumentType}
-            setSelectedFile={dashboard.setSelectedFile}
-            setUploadMessage={dashboard.setUploadMessage}
-            uploadDocMutation={dashboard.uploadDocMutation}
-            uploadMessage={dashboard.uploadMessage}
-          />
-        )}
-
-        {status === "rejected" && (
-          <RejectedApplicationPanel
-            reapplyMessage={dashboard.reapplyMessage}
-            reapplyMutation={dashboard.reapplyMutation}
-            vendorProfile={vendorProfile}
-          />
-        )}
-
-        {status === "approved" && (
-          <ApprovedVendorWorkspace
-            categories={dashboard.categories}
-            createProductMutation={dashboard.createProductMutation}
-            handleNameChange={dashboard.handleNameChange}
-            handleProductFieldChange={dashboard.handleProductFieldChange}
-            productForm={dashboard.productForm}
-            productImage={dashboard.productImage}
-            productMessage={dashboard.productMessage}
-            setProductImage={dashboard.setProductImage}
-            setProductMessage={dashboard.setProductMessage}
-            vendorProducts={dashboard.vendorProducts}
-          />
-        )}
-      </div>
-    </div>
+  const status = vendorQuery.data.status;
+  return (
+    <main className="jwso-container jwso-page grid gap-7">
+      <VendorHeader
+        logoutMutation={dashboard.logoutMutation}
+        vendorProfile={vendorQuery.data}
+      />
+      {dashboard.paystackReturnDetected && (
+        <PaymentReturnNotice
+          isSyncingPayment={dashboard.isSyncingPayment}
+          paymentMessage={dashboard.paymentMessage}
+          paymentReference={dashboard.paymentReference}
+        />
+      )}
+      {status === "pending_payment" && (
+        <PaymentGate
+          currency={dashboard.currency}
+          paymentMessage={dashboard.paymentMessage}
+          payFeeMutation={dashboard.payFeeMutation}
+          setCurrency={dashboard.setCurrency}
+        />
+      )}
+      {status === "pending_review" && (
+        <DocumentUploadPanel
+          documentType={dashboard.documentType}
+          selectedFile={dashboard.selectedFile}
+          setDocumentType={dashboard.setDocumentType}
+          setSelectedFile={dashboard.setSelectedFile}
+          setUploadMessage={dashboard.setUploadMessage}
+          uploadDocMutation={dashboard.uploadDocMutation}
+          uploadMessage={dashboard.uploadMessage}
+        />
+      )}
+      {status === "rejected" && (
+        <RejectedApplicationPanel
+          reapplyMessage={dashboard.reapplyMessage}
+          reapplyMutation={dashboard.reapplyMutation}
+          vendorProfile={vendorQuery.data}
+        />
+      )}
+      {status === "suspended" && (
+        <div className="jwso-alert" data-tone="warning" role="status">
+          <h2 className="jwso-section-title">Vendor access suspended</h2>
+          <p className="jwso-copy mt-2">
+            Your vendor workspace is currently unavailable. Please contact
+            marketplace support for help with your account.
+          </p>
+        </div>
+      )}
+      {status === "approved" && (
+        <ApprovedVendorWorkspace
+          categories={dashboard.categories}
+          categoriesError={dashboard.categoriesQuery.isError}
+          createProductMutation={dashboard.createProductMutation}
+          handleNameChange={dashboard.handleNameChange}
+          handleProductFieldChange={dashboard.handleProductFieldChange}
+          productForm={dashboard.productForm}
+          productImage={dashboard.productImage}
+          productMessage={dashboard.productMessage}
+          setProductImage={dashboard.setProductImage}
+          setProductMessage={dashboard.setProductMessage}
+          vendorProducts={dashboard.vendorProducts}
+          productsLoading={dashboard.vendorProductsQuery.isLoading}
+          productsError={dashboard.vendorProductsQuery.isError}
+          hasMoreProducts={Boolean(dashboard.vendorProductsQuery.hasNextPage)}
+          loadingMoreProducts={dashboard.vendorProductsQuery.isFetchingNextPage}
+          loadMoreProducts={() => dashboard.vendorProductsQuery.fetchNextPage()}
+          retryProducts={() => dashboard.vendorProductsQuery.refetch()}
+        />
+      )}
+    </main>
   );
 }

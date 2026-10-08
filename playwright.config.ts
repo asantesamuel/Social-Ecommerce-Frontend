@@ -6,9 +6,12 @@ const storefront = "http://store.localhost:3311";
 const admin = "http://admin.localhost:3312";
 const vendor = "http://vendor.localhost:3313";
 const api = `http://127.0.0.1:${apiPort}`;
-const adminSecret = process.env.E2E_ADMIN_SECRET ?? randomBytes(32).toString("base64url");
-const vendorSecret = process.env.E2E_VENDOR_SECRET ?? randomBytes(32).toString("base64url");
-const password = process.env.E2E_PASSWORD ?? randomBytes(18).toString("base64url");
+const adminSecret =
+  process.env.E2E_ADMIN_SECRET ?? randomBytes(32).toString("base64url");
+const vendorSecret =
+  process.env.E2E_VENDOR_SECRET ?? randomBytes(32).toString("base64url");
+const password =
+  process.env.E2E_PASSWORD ?? randomBytes(18).toString("base64url");
 
 process.env.E2E_ADMIN_SECRET = adminSecret;
 process.env.E2E_VENDOR_SECRET = vendorSecret;
@@ -20,6 +23,7 @@ process.env.E2E_PASSWORD = password;
 
 const sharedEnv = {
   API_URL: api,
+  NEXT_PUBLIC_VENDOR_APPLICATIONS_SOURCE: "api",
   NEXT_PUBLIC_STOREFRONT_URL: storefront,
   NEXT_PUBLIC_ADMIN_DASHBOARD_URL: admin,
   NEXT_PUBLIC_VENDOR_DASHBOARD_URL: vendor,

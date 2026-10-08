@@ -1,100 +1,133 @@
 "use client";
 
+import { useState } from "react";
+import { formatCurrency } from "@repo/api";
 import { useAdminOrders } from "../../../hooks/useAdmin";
-import React, { useState } from "react";
-import { formatCurrency, type Order, type PaginatedResponse } from "@repo/api";
+
+const statuses = [
+  "pending",
+  "paid",
+  "processing",
+  "shipped",
+  "delivered",
+  "refunded",
+  "cancelled",
+];
 
 export default function OrdersManagementPage() {
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const {
-    data,
-    isLoading,
-    isError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useAdminOrders(statusFilter);
-
-  if (isLoading)
-    return (
-      <div className="flex h-full items-center justify-center p-8 text-2xl font-black">
-        FETCHING ORDERS...
-      </div>
-    );
-  if (isError)
-    return (
-      <div className="text-[#ff3b30] font-black text-2xl">
-        FAILED TO FETCH ORDERS
-      </div>
-    );
-
-  const orders =
-    data?.pages.flatMap((page: PaginatedResponse<Order>) => page.data) || [];
+  const [statusFilter, setStatusFilter] = useState("");
+  const ordersQuery = useAdminOrders(statusFilter);
+  const orders = ordersQuery.data?.pages.flatMap((page) => page.data) ?? [];
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex justify-between items-center">
+    <div className="grid gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter">
-            Order Matrix
-          </h2>
-          <p className="text-gray-500 font-medium whitespace-nowrap">
-            Global logistics and sales stream.
+          <p className="jwso-kicker mb-2">Marketplace activity</p>
+          <h1 className="jwso-page-title">Orders</h1>
+          <p className="jwso-copy mt-2">
+            Monitor order volume and fulfilment status.
           </p>
         </div>
-        <select
-          aria-label="Order Status Filter"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-transparent border border-[#e4e4e7] dark:border-white/20 rounded-xl px-4 py-2 font-bold uppercase text-sm outline-none"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="processing">Processing</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <div className="jwso-field w-full sm:w-48">
+          <label htmlFor="order-status-filter" className="jwso-label">
+            Status
+          </label>
+          <select
+            id="order-status-filter"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            className="jwso-select"
+          >
+            <option value="">All statuses</option>
+            {statuses.map((status) => (
+              <option key={status} value={status} className="capitalize">
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
       </header>
-
-      <div className="glass-card p-0 overflow-hidden text-sm md:text-base">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      {ordersQuery.isLoading ? (
+        <div
+          className="jwso-skeleton h-52 rounded-[6px]"
+          aria-label="Loading orders"
+        />
+      ) : ordersQuery.isError ? (
+        <div className="jwso-empty" role="alert">
+          <h2 className="jwso-section-title">Orders unavailable</h2>
+          <p>Order data could not be loaded.</p>
+          <button
+            type="button"
+            onClick={() => ordersQuery.refetch()}
+            className="jwso-button"
+          >
+            Retry
+          </button>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="jwso-empty">
+          <h2 className="jwso-section-title">No orders found</h2>
+          <p>
+            {statusFilter
+              ? "Try another status filter."
+              : "Orders will appear here when customers place them."}
+          </p>
+          {statusFilter && (
+            <button
+              type="button"
+              onClick={() => setStatusFilter("")}
+              className="jwso-button"
+            >
+              Show all orders
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="jwso-table-wrap">
+          <table className="jwso-table">
             <thead>
-              <tr className="bg-gray-50 dark:bg-white/5 border-b border-[#f4f4f5] dark:border-white/10 uppercase text-xs tracking-wider font-bold text-gray-500">
-                <th className="p-4">Order ID</th>
-                <th className="p-4">Customer</th>
-                <th className="p-4">Placed At</th>
-                <th className="p-4">Items</th>
-                <th className="p-4 text-right">Total</th>
-                <th className="p-4 text-right">Status</th>
+              <tr>
+                <th scope="col">Order ID</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Placed</th>
+                <th scope="col">Items</th>
+                <th scope="col" className="jwso-table__right">
+                  Total
+                </th>
+                <th scope="col">Status</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((order: Order) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-[#f4f4f5] dark:border-white/10 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                >
+              {orders.map((order) => (
+                <tr key={order.id}>
                   <td
-                    className="p-4 font-bold max-w-[120px] truncate"
+                    className="max-w-40 truncate font-semibold"
                     title={String(order.id)}
                   >
                     {order.id}
                   </td>
-                  <td className="p-4 text-gray-600 dark:text-gray-300 font-medium">
-                    {order.customer || "Unknown customer"}
-                  </td>
-                  <td className="p-4 text-gray-500 font-medium text-xs">
+                  <td>{order.customer || "Customer unavailable"}</td>
+                  <td className="whitespace-nowrap">
                     {new Date(order.placedAt).toLocaleString()}
                   </td>
-                  <td className="p-4 font-bold">{order.itemCount ?? 0}</td>
-                  <td className="p-4 text-right font-black">
+                  <td className="tabular-nums">{order.itemCount ?? 0}</td>
+                  <td className="jwso-table__right jwso-price">
                     {formatCurrency(order.total)}
                   </td>
-                  <td className="p-4 text-right">
-                    <span className="text-[10px] font-bold uppercase px-2 py-1 bg-black text-white dark:bg-white dark:text-black rounded-full">
+                  <td>
+                    <span
+                      className="jwso-status"
+                      data-tone={
+                        order.status === "cancelled" ||
+                        order.status === "refunded"
+                          ? "error"
+                          : order.status === "delivered" ||
+                              order.status === "paid"
+                            ? "success"
+                            : "info"
+                      }
+                    >
                       {order.status}
                     </span>
                   </td>
@@ -103,15 +136,15 @@ export default function OrdersManagementPage() {
             </tbody>
           </table>
         </div>
-      </div>
-
-      {hasNextPage && (
+      )}
+      {ordersQuery.hasNextPage && (
         <button
-          onClick={() => fetchNextPage()}
-          disabled={isFetchingNextPage}
-          className="mx-auto w-full max-w-sm py-4 border-2 border-black dark:border-white rounded-2xl font-black uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+          type="button"
+          onClick={() => ordersQuery.fetchNextPage()}
+          disabled={ordersQuery.isFetchingNextPage}
+          className="jwso-button jwso-button--secondary mx-auto"
         >
-          {isFetchingNextPage ? "Extracting..." : "Load More Orders"}
+          {ordersQuery.isFetchingNextPage ? "Loading…" : "Load more orders"}
         </button>
       )}
     </div>

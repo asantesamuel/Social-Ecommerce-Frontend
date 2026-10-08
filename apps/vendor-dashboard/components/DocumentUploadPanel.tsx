@@ -1,10 +1,10 @@
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { VendorDocument, VendorDocumentType } from "@repo/api";
 
-type DocumentUploadPanelProps = {
+type Props = {
   documentType: VendorDocumentType;
   selectedFile: File | null;
-  setDocumentType: (documentType: VendorDocumentType) => void;
+  setDocumentType: (type: VendorDocumentType) => void;
   setSelectedFile: (file: File | null) => void;
   setUploadMessage: (message: string | null) => void;
   uploadDocMutation: UseMutationResult<VendorDocument, unknown, void, unknown>;
@@ -19,65 +19,70 @@ export default function DocumentUploadPanel({
   setUploadMessage,
   uploadDocMutation,
   uploadMessage,
-}: DocumentUploadPanelProps) {
+}: Props) {
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <div className="glass-card flex h-full min-h-[300px] flex-col items-center justify-center p-8 shadow-sm">
-        <h2 className="text-center text-3xl font-black uppercase tracking-tighter">
-          Awaiting Validation
-        </h2>
-        <p className="mt-4 text-center text-lg font-medium text-minimal-gray">
-          Our team is reviewing your profile. In the meantime, upload your
-          business documents.
-        </p>
-      </div>
-
-      <div className="glass-card border border-[#eaeaea] bg-white p-8">
-        <h3 className="mb-6 text-xl font-bold uppercase tracking-tight">
-          Upload Verification Doc
-        </h3>
-        <p className="mb-6 text-sm font-medium text-minimal-gray">
-          Must be a business registration, tax certificate, ID proof, or
-          supporting document.
-        </p>
-
-        <select
-          value={documentType}
-          onChange={(event) =>
-            setDocumentType(event.target.value as VendorDocumentType)
-          }
-          className="mb-4 w-full rounded-xl border border-[#e4e4e7] bg-[#f4f4f5] px-4 py-4 font-medium outline-none"
-        >
-          <option value="business_registration">Business Registration</option>
-          <option value="tax_certificate">Tax Certificate</option>
-          <option value="id_proof">ID Proof</option>
-          <option value="other">Other</option>
-        </select>
-
-        <input
-          type="file"
-          accept=".pdf,.doc,.docx,image/jpeg,image/png"
-          onChange={(event) => {
-            setSelectedFile(event.target.files?.[0] || null);
-            setUploadMessage(null);
-          }}
-          className="mb-6 block w-full rounded-xl border border-[#e4e4e7] bg-gray-50 px-4 py-4 text-sm text-slate-500 transition-all file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-black file:px-6 file:py-3 file:text-sm file:font-semibold file:text-white"
-        />
-
+    <section className="max-w-[650px]" aria-labelledby="review-heading">
+      <p className="jwso-kicker mb-2">Onboarding · Review</p>
+      <h2 id="review-heading" className="jwso-section-title">
+        Application under review
+      </h2>
+      <p className="jwso-copy mt-3">
+        The JWSO team is reviewing your business. You can submit supporting
+        documents below.
+      </p>
+      <div className="mt-7 grid gap-5">
+        <div className="jwso-field">
+          <label htmlFor="document-type" className="jwso-label">
+            Document type
+          </label>
+          <select
+            id="document-type"
+            className="jwso-select"
+            value={documentType}
+            onChange={(event) =>
+              setDocumentType(event.target.value as VendorDocumentType)
+            }
+          >
+            <option value="business_registration">Business registration</option>
+            <option value="tax_certificate">Tax certificate</option>
+            <option value="id_proof">ID proof</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div className="jwso-field">
+          <label htmlFor="verification-file" className="jwso-label">
+            Verification document
+          </label>
+          <input
+            id="verification-file"
+            type="file"
+            accept=".pdf,.doc,.docx,image/jpeg,image/png"
+            className="jwso-input file:mr-3 file:border-0 file:bg-[var(--jwso-brand-soft)] file:px-3 file:py-1 file:text-sm file:font-semibold file:text-[var(--jwso-brand)]"
+            onChange={(event) => {
+              setSelectedFile(event.target.files?.[0] || null);
+              setUploadMessage(null);
+            }}
+          />
+          <p className="jwso-help">PDF, Word, JPG or PNG.</p>
+        </div>
         <button
+          type="button"
           onClick={() => uploadDocMutation.mutate()}
           disabled={!selectedFile || uploadDocMutation.isPending}
-          className="w-full rounded-xl bg-black py-4 font-bold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800 disabled:opacity-50"
+          className="jwso-button w-fit"
         >
-          {uploadDocMutation.isPending ? "Uploading..." : "Submit Document"}
+          {uploadDocMutation.isPending ? "Uploading…" : "Submit document"}
         </button>
-
         {uploadMessage && (
-          <p className="mt-4 text-sm font-medium text-minimal-gray">
+          <p
+            className="jwso-alert"
+            data-tone={uploadDocMutation.isError ? "error" : "success"}
+            role="status"
+          >
             {uploadMessage}
           </p>
         )}
       </div>
-    </div>
+    </section>
   );
 }

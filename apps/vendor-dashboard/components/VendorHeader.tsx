@@ -1,42 +1,50 @@
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { VendorProfile } from "@repo/api";
 
-type VendorHeaderProps = {
+type Props = {
   logoutMutation: UseMutationResult<void, unknown, void, unknown>;
   vendorProfile: VendorProfile;
 };
 
-export default function VendorHeader({
-  logoutMutation,
-  vendorProfile,
-}: VendorHeaderProps) {
-  const vendorName =
-    vendorProfile.companyName || vendorProfile.businessName || "Vendor";
-
+export default function VendorHeader({ logoutMutation, vendorProfile }: Props) {
+  const name =
+    vendorProfile.companyName || vendorProfile.businessName || "Your store";
+  const tone =
+    vendorProfile.status === "approved"
+      ? "success"
+      : vendorProfile.status === "rejected" ||
+          vendorProfile.status === "suspended"
+        ? "error"
+        : "warning";
   return (
-    <header className="glass-card flex items-center justify-between p-6 shadow-sm">
+    <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--jwso-line)] pb-6">
       <div>
-        <h1 className="text-3xl font-black uppercase tracking-tighter text-[#111]">
-          Command Center
-        </h1>
-        <p className="font-medium text-minimal-gray">{vendorName}</p>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="rounded-full bg-[#111] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white">
-          STATUS: {vendorProfile.status}
+        <p className="jwso-brand mb-5">
+          <span className="jwso-brand__mark">J</span>JWSO{" "}
+          <span className="jwso-app-label border-l border-[var(--jwso-line)] pl-3">
+            Vendor
+          </span>
+        </p>
+        <p className="jwso-kicker mb-2">Store workspace</p>
+        <h1 className="jwso-page-title">{name}</h1>
+        <span className="jwso-status mt-3" data-tone={tone}>
+          {vendorProfile.status.replace(/_/g, " ")}
         </span>
-        <div className="flex flex-col items-end gap-1">
-          <button
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
-            className="rounded-full border border-[#e4e4e7] bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#111] transition-colors hover:bg-[#f4f4f5] disabled:opacity-50"
-          >
-            {logoutMutation.isPending ? "Signing Out..." : "Logout"}
-          </button>
-          {logoutMutation.isError && (
-            <p role="alert" className="text-xs text-red-700">Sign out failed. Try again.</p>
-          )}
-        </div>
+      </div>
+      <div className="text-right">
+        <button
+          type="button"
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+          className="jwso-button jwso-button--secondary"
+        >
+          {logoutMutation.isPending ? "Signing out…" : "Sign out"}
+        </button>
+        {logoutMutation.isError && (
+          <p className="mt-2 text-sm text-[var(--jwso-error)]" role="alert">
+            Sign out failed. Try again.
+          </p>
+        )}
       </div>
     </header>
   );

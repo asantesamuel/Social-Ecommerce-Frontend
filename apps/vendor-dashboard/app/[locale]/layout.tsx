@@ -4,17 +4,17 @@ import "../globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 
-const spaceGrotesk = localFont({
+const geist = localFont({
   src: "../fonts/GeistVF.woff",
-  variable: "--font-space-grotesk",
+  variable: "--font-jwso-sans",
   weight: "100 900",
 });
 
 import QueryProvider from "../../lib/QueryProvider";
 
 export const metadata: Metadata = {
-  title: "Vendor Dashboard",
-  description: "Manage your storefront and products easily.",
+  title: "JWSO | Vendor",
+  description: "Manage your JWSO vendor account and products.",
 };
 
 export default async function RootLayout({
@@ -29,7 +29,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
-        className={`${spaceGrotesk.variable} antialiased`}
+        className={`${geist.variable} antialiased`}
         suppressHydrationWarning
       >
         <NextIntlClientProvider messages={messages}>

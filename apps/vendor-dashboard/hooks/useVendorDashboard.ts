@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   authApi,
@@ -81,7 +86,9 @@ export const useVendorDashboard = () => {
       return;
     }
 
-    setPaymentMessage("Payment received. Syncing your vendor status...");
+    setPaymentMessage(
+      "Payment return detected. Checking your vendor status...",
+    );
     setIsSyncingPayment(true);
 
     const interval = window.setInterval(async () => {
@@ -111,9 +118,13 @@ export const useVendorDashboard = () => {
     enabled: vendorQuery.data?.status === "approved",
   });
 
-  const vendorProductsQuery = useQuery({
+  const vendorProductsQuery = useInfiniteQuery({
     queryKey: ["vendor-products"],
-    queryFn: () => catalogApi.listVendorProducts({ limit: 20 }),
+    queryFn: ({ pageParam }) =>
+      catalogApi.listVendorProducts({ page: pageParam, limit: 20 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
     enabled: vendorQuery.data?.status === "approved",
   });
 
@@ -242,6 +253,7 @@ export const useVendorDashboard = () => {
 
   return {
     categories: categoriesQuery.data ?? [],
+    categoriesQuery,
     createProductMutation,
     currency,
     documentType,
@@ -267,7 +279,9 @@ export const useVendorDashboard = () => {
     setUploadMessage,
     uploadDocMutation,
     uploadMessage,
-    vendorProducts: vendorProductsQuery.data?.data ?? [],
+    vendorProducts:
+      vendorProductsQuery.data?.pages.flatMap((page) => page.data) ?? [],
+    vendorProductsQuery,
     vendorQuery,
   };
 };

@@ -1,27 +1,43 @@
 "use client";
 
-import { ShoppingBag, Globe, LogOut, UserRound } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  Globe2,
+  LogOut,
+  Menu,
+  Search,
+  ShoppingBag,
+  UserRound,
+  X,
+} from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { authApi } from "@repo/api";
 import { Link, usePathname, useRouter } from "../i18n/routing";
 import { useCart } from "../hooks/useCart";
-import { authApi } from "@repo/api";
 
 export default function Navbar() {
   const { cart } = useCart();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => setSearch(searchParams.get("search") ?? ""), [searchParams]);
   const session = useQuery({
     queryKey: ["auth-session"],
     queryFn: authApi.session,
     staleTime: 30_000,
     retry: false,
   });
-  const isAuthenticated = Boolean(session.data?.user);
 
-  const handleLangChange = (locale: string) => {
-    router.replace(pathname, { locale });
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = search.trim();
+    router.push(query ? `/?search=${encodeURIComponent(query)}` : "/");
+    setMenuOpen(false);
   };
 
   const handleLogout = async () => {
@@ -34,80 +50,179 @@ export default function Navbar() {
     }
   };
 
-  const cartItemCount = cart.data?.items?.length || 0;
+  const cartItemCount =
+    cart.data?.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
   return (
-    <nav className="fixed left-0 top-0 z-50 w-full border-b border-[#ded7ca]/80 bg-[#fffdf8]/82 px-4 py-3 shadow-[0_14px_40px_rgba(17,16,14,0.06)] backdrop-blur-xl sm:px-8">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
+    <header className="sticky top-0 z-50 border-b border-[var(--jwso-line)] bg-white">
+      <div className="jwso-container flex h-[68px] items-center gap-4 lg:gap-7">
         <Link
           href="/"
-          className="group flex items-center gap-3 text-xl font-black uppercase tracking-[0.08em]"
+          className="jwso-brand"
+          onClick={() => setMenuOpen(false)}
         >
-          <span className="grid h-9 w-9 place-items-center rounded-[8px] bg-[#11100e] text-sm text-[#fffdf8] transition-transform duration-300 group-hover:-rotate-6">
-            S
-          </span>
-          <span>
-            Storefront<span className="text-[#c83a2d]">.</span>
-          </span>
+          <span className="jwso-brand__mark">J</span>JWSO
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <form
+          role="search"
+          onSubmit={handleSearch}
+          className="hidden min-w-0 flex-1 sm:flex lg:mx-6"
+        >
+          <label htmlFor="site-search" className="sr-only">
+            Search products
+          </label>
+          <input
+            id="site-search"
+            className="jwso-input !rounded-r-none"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search products"
+          />
+          <button
+            className="jwso-button !rounded-l-none"
+            type="submit"
+            aria-label="Search products"
+            title="Search products"
+          >
+            <Search size={18} aria-hidden="true" />
+          </button>
+        </form>
+
+        <nav
+          aria-label="Storefront"
+          className="hidden items-center gap-5 text-sm font-semibold lg:flex"
+        >
+          <Link href="/" className="hover:text-[var(--jwso-brand)]">
+            Shop
+          </Link>
+          <Link
+            href="/signup?intent=vendor"
+            className="whitespace-nowrap hover:text-[var(--jwso-brand)]"
+          >
+            Sell on JWSO
+          </Link>
+        </nav>
+
+        <div className="ml-auto flex items-center gap-1 sm:ml-0">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               <button
-                aria-label="Language"
-                className="grid h-10 w-10 place-items-center rounded-[8px] border border-[#ded7ca] bg-white/70 text-[#11100e] transition-all hover:-translate-y-0.5 hover:border-[#11100e]"
+                type="button"
+                className="jwso-icon-button jwso-icon-button--secondary"
+                aria-label="Choose language"
+                title="Choose language"
               >
-                <Globe size={20} />
+                <Globe2 size={18} aria-hidden="true" />
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content
               align="end"
-              className="z-50 mt-2 min-w-[120px] rounded-[8px] border border-[#ded7ca] bg-[#fffdf8] p-2 shadow-[0_18px_50px_rgba(17,16,14,0.12)]"
+              className="z-[60] mt-2 min-w-32 rounded-[6px] border border-[var(--jwso-line)] bg-white p-1 shadow-[var(--jwso-shadow)]"
             >
-              {["en", "es", "fr"].map((lang) => (
+              {(["en", "es", "fr"] as const).map((locale) => (
                 <DropdownMenu.Item
-                  key={lang}
-                  onClick={() => handleLangChange(lang)}
-                  className="cursor-pointer rounded-[6px] px-4 py-2 text-sm font-bold uppercase tracking-[0.08em] outline-none transition-colors hover:bg-[#11100e] hover:text-white"
+                  key={locale}
+                  onSelect={() => router.replace(pathname, { locale })}
+                  className="cursor-pointer rounded-[4px] px-3 py-2 text-sm uppercase outline-none hover:bg-[var(--jwso-surface-soft)] focus:bg-[var(--jwso-surface-soft)]"
                 >
-                  {lang}
+                  {locale}
                 </DropdownMenu.Item>
               ))}
             </DropdownMenu.Content>
           </DropdownMenu.Root>
-
           <Link
             href="/cart"
-            aria-label="Cart"
-            className="relative grid h-10 w-10 place-items-center rounded-[8px] border border-[#ded7ca] bg-white/70 text-[#11100e] transition-all hover:-translate-y-0.5 hover:border-[#11100e]"
+            className="jwso-icon-button jwso-icon-button--secondary relative"
+            aria-label={`Cart, ${cartItemCount} items`}
+            title="Cart"
           >
-            <ShoppingBag size={20} />
+            <ShoppingBag size={18} aria-hidden="true" />
             {cartItemCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c83a2d] px-1 text-[10px] font-black text-white">
+              <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-[4px] bg-[var(--jwso-accent)] px-1 text-[10px] font-bold text-white">
                 {cartItemCount}
               </span>
             )}
           </Link>
-          {isAuthenticated ? (
+          {session.data?.user ? (
             <button
-              aria-label="Logout"
+              type="button"
               onClick={handleLogout}
-              className="grid h-10 w-10 place-items-center rounded-[8px] border border-[#ded7ca] bg-white/70 text-[#706b63] transition-all hover:-translate-y-0.5 hover:border-[#c83a2d] hover:text-[#c83a2d]"
+              className="jwso-icon-button jwso-icon-button--secondary"
+              aria-label="Sign out"
+              title="Sign out"
             >
-              <LogOut size={19} />
+              <LogOut size={18} aria-hidden="true" />
             </button>
           ) : (
             <Link
               href="/login"
-              aria-label="Account"
-              className="grid h-10 w-10 place-items-center rounded-[8px] border border-[#ded7ca] bg-white/70 text-[#11100e] transition-all hover:-translate-y-0.5 hover:border-[#11100e]"
+              className="jwso-icon-button jwso-icon-button--secondary"
+              aria-label="Sign in"
+              title="Sign in"
             >
-              <UserRound size={19} />
+              <UserRound size={18} aria-hidden="true" />
             </Link>
           )}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="jwso-icon-button jwso-icon-button--secondary lg:!hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            title={menuOpen ? "Close menu" : "Open menu"}
+          >
+            {menuOpen ? (
+              <X size={18} aria-hidden="true" />
+            ) : (
+              <Menu size={18} aria-hidden="true" />
+            )}
+          </button>
         </div>
       </div>
-    </nav>
+      {menuOpen && (
+        <div className="jwso-container border-t border-[var(--jwso-line)] py-3 lg:hidden">
+          <nav
+            aria-label="Mobile storefront"
+            className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-semibold"
+          >
+            <Link href="/" onClick={() => setMenuOpen(false)}>
+              Shop
+            </Link>
+            <Link
+              href="/signup?intent=vendor"
+              onClick={() => setMenuOpen(false)}
+            >
+              Sell on JWSO
+            </Link>
+          </nav>
+          <form
+            role="search"
+            onSubmit={handleSearch}
+            className="mt-3 flex sm:hidden"
+          >
+            <label htmlFor="mobile-search" className="sr-only">
+              Search products
+            </label>
+            <input
+              id="mobile-search"
+              className="jwso-input !rounded-r-none"
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search products"
+            />
+            <button
+              className="jwso-button !rounded-l-none"
+              type="submit"
+              aria-label="Search products"
+            >
+              <Search size={18} aria-hidden="true" />
+            </button>
+          </form>
+        </div>
+      )}
+    </header>
   );
 }

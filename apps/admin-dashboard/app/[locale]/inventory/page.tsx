@@ -1,101 +1,90 @@
 "use client";
 
+import { useState } from "react";
 import { useAdminInventory } from "../../../hooks/useAdmin";
-import React, { useState } from "react";
-import type { InventoryAlert } from "@repo/api";
 
 export default function InventoryAlertsPage() {
   const [threshold, setThreshold] = useState(10);
-  const { data, isLoading, isError } = useAdminInventory(threshold);
-
-  if (isLoading)
-    return (
-      <div className="flex h-full items-center justify-center p-8 text-2xl font-black">
-        SCANNING INVENTORY...
-      </div>
-    );
-  if (isError)
-    return (
-      <div className="text-[#ff3b30] font-black text-2xl">
-        FAILED TO SCAN INVENTORY
-      </div>
-    );
-
-  const alerts = data?.alerts || [];
+  const inventory = useAdminInventory(threshold);
+  const alerts = inventory.data?.alerts ?? [];
 
   return (
-    <div className="flex flex-col gap-8">
-      <header className="flex justify-between items-center">
+    <div className="grid gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter">
-            Inventory Alerts
-          </h2>
-          <p className="text-[#ff3b30] font-bold whitespace-nowrap">
-            Critical Low Stock Thresholds.
+          <p className="jwso-kicker mb-2">Stock monitoring</p>
+          <h1 className="jwso-page-title">Inventory alerts</h1>
+          <p className="jwso-copy mt-2">
+            Products at or below your chosen stock threshold.
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <label className="font-bold text-sm uppercase">Threshold:</label>
+        <div className="jwso-field w-32">
+          <label htmlFor="inventory-threshold" className="jwso-label">
+            Threshold
+          </label>
           <input
-            aria-label="Inventory Threshold"
+            id="inventory-threshold"
+            className="jwso-input"
             type="number"
-            value={threshold}
-            onChange={(e) => setThreshold(Number(e.target.value))}
-            className="w-24 bg-transparent border border-[#e4e4e7] dark:border-white/20 rounded-xl px-4 py-2 font-bold focus:outline-none focus:border-black dark:focus:border-white"
             min="1"
             max="100"
+            value={threshold}
+            onChange={(event) =>
+              setThreshold(
+                Math.min(100, Math.max(1, Number(event.target.value) || 1)),
+              )
+            }
           />
         </div>
       </header>
-
-      {alerts.length === 0 ? (
-        <div className="glass-card flex flex-col items-center justify-center py-24 text-center">
-          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500 text-sm font-black text-white">
-            OK
-          </div>
-          <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">
-            Systems Nominal
-          </h3>
-          <p className="text-gray-500 font-medium max-w-sm">
-            All inventory levels are currently sitting comfortably above the
-            warning thresholds.
-          </p>
+      {inventory.isLoading ? (
+        <div
+          className="jwso-skeleton h-52 rounded-[6px]"
+          aria-label="Loading inventory"
+        />
+      ) : inventory.isError ? (
+        <div className="jwso-empty" role="alert">
+          <h2 className="jwso-section-title">Inventory unavailable</h2>
+          <p>Stock data could not be loaded.</p>
+          <button
+            type="button"
+            onClick={() => inventory.refetch()}
+            className="jwso-button"
+          >
+            Retry
+          </button>
+        </div>
+      ) : alerts.length === 0 ? (
+        <div className="jwso-empty">
+          <h2 className="jwso-section-title">No low-stock products</h2>
+          <p>None of the products checked are at or below {threshold} units.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {alerts.map((alert: InventoryAlert) => (
-            <div
-              key={alert.productId}
-              className="glass-card shadow-2xl border-t-4 border-[#ff3b30] transition-transform hover:-translate-y-1"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-xs font-black tracking-widest uppercase text-red-500 bg-red-500/10 px-2 py-1 rounded">
-                  Critically Low
-                </span>
-                <span className="text-3xl font-black text-[#ff3b30]">
-                  {alert.stockQuantity}
-                </span>
-              </div>
-              <h3
-                className="text-xl font-bold truncate mb-1"
-                title={alert.productName}
-              >
-                {alert.productName}
-              </h3>
-              <p className="text-sm font-medium text-gray-500">
-                Vendor:{" "}
-                <span className="text-black dark:text-white">
-                  {alert.vendorName}
-                </span>
-              </p>
-
-              <div className="mt-6">
-                <button className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-widest text-xs rounded-xl hover:opacity-80 transition-opacity">
-                  Notify Vendor
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="jwso-table-wrap">
+          <table className="jwso-table">
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Vendor</th>
+                <th scope="col">Stock remaining</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {alerts.map((alert) => (
+                <tr key={alert.productId}>
+                  <td className="font-semibold">{alert.productName}</td>
+                  <td>{alert.vendorName}</td>
+                  <td className="tabular-nums">{alert.stockQuantity}</td>
+                  <td>
+                    <span className="jwso-status" data-tone="warning">
+                      Low stock
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

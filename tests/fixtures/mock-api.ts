@@ -1,5 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 
 type Role = "customer" | "admin" | "vendor";
 type Identity = { id: string; email: string; role: Role };
@@ -24,14 +28,22 @@ const clients = {
 } as const;
 
 function json(response: ServerResponse, status: number, body: unknown) {
-  response.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+  response.writeHead(status, {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store",
+  });
   response.end(JSON.stringify(body));
 }
 
-async function readBody(request: IncomingMessage): Promise<Record<string, string>> {
+async function readBody(
+  request: IncomingMessage,
+): Promise<Record<string, string>> {
   const chunks: Buffer[] = [];
   for await (const chunk of request) chunks.push(Buffer.from(chunk));
-  return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}") as Record<string, string>;
+  return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}") as Record<
+    string,
+    string
+  >;
 }
 
 function issue(identity: Identity) {
@@ -73,7 +85,11 @@ const server = createServer(async (request, response) => {
       if (!identity) return json(response, 401, { message: "Expired session" });
       const accessToken = randomBytes(24).toString("base64url");
       access.set(accessToken, identity);
-      return json(response, 200, { accessToken, refreshToken: body.refreshToken, user: identity });
+      return json(response, 200, {
+        accessToken,
+        refreshToken: body.refreshToken,
+        user: identity,
+      });
     }
 
     if (path === "/auth/logout" && request.method === "POST") {
@@ -89,26 +105,44 @@ const server = createServer(async (request, response) => {
       const body = await readBody(request);
       const client = clients[body.clientId as keyof typeof clients];
       if (!client) return json(response, 400, { message: "Invalid client" });
-      if (identity.role !== client.role) return json(response, 403, { message: "Wrong role" });
+      if (identity.role !== client.role)
+        return json(response, 403, { message: "Wrong role" });
       const code = randomBytes(32).toString("base64url");
-      grants.set(code, { identity, clientId: body.clientId, challenge: body.codeChallenge });
+      grants.set(code, {
+        identity,
+        clientId: body.clientId,
+        challenge: body.codeChallenge,
+      });
       const callback = new URL(client.callback!);
       callback.searchParams.set("code", code);
       callback.searchParams.set("state", body.state);
-      return json(response, 200, { redirectUrl: callback.toString(), expiresIn: 60 });
+      return json(response, 200, {
+        redirectUrl: callback.toString(),
+        expiresIn: 60,
+      });
     }
 
     if (path === "/auth/handoff/exchange" && request.method === "POST") {
       const body = await readBody(request);
       const client = clients[body.clientId as keyof typeof clients];
       const credentials = request.headers.authorization?.startsWith("Basic ")
-        ? Buffer.from(request.headers.authorization.slice(6), "base64").toString("utf8")
+        ? Buffer.from(
+            request.headers.authorization.slice(6),
+            "base64",
+          ).toString("utf8")
         : "";
       const grant = grants.get(body.code);
       grants.delete(body.code);
-      const challenge = createHash("sha256").update(body.codeVerifier ?? "").digest("base64url");
-      if (!client || !grant || credentials !== `${body.clientId}:${client.secret}` ||
-        grant.clientId !== body.clientId || grant.challenge !== challenge) {
+      const challenge = createHash("sha256")
+        .update(body.codeVerifier ?? "")
+        .digest("base64url");
+      if (
+        !client ||
+        !grant ||
+        credentials !== `${body.clientId}:${client.secret}` ||
+        grant.clientId !== body.clientId ||
+        grant.challenge !== challenge
+      ) {
         return json(response, 401, { message: "Invalid handoff" });
       }
       return json(response, 200, issue(grant.identity));
@@ -117,15 +151,25 @@ const server = createServer(async (request, response) => {
     if (path === "/products" && request.method === "GET") {
       return json(response, 200, { data: [], page: 1, totalPages: 1 });
     }
-    if (path === "/categories" && request.method === "GET") return json(response, 200, []);
-    if (path === "/always-unauthorized") return json(response, 401, { message: "Unauthorized" });
+    if (path === "/categories" && request.method === "GET")
+      return json(response, 200, []);
+    if (path === "/always-unauthorized")
+      return json(response, 401, { message: "Unauthorized" });
 
     const identity = bearerIdentity(request);
     if (!identity) return json(response, 401, { message: "Unauthorized" });
     if (path === "/users/me") return json(response, 200, identity);
-    if (path === "/cart") return json(response, 200, { items: [], subtotal: 0 });
+    if (path === "/cart")
+      return json(response, 200, { items: [], subtotal: 0 });
+    if (path === "/products/vendor/my-products" && identity.role === "vendor") {
+      return json(response, 200, { data: [], page: 1, totalPages: 1 });
+    }
     if (path === "/vendors/me" && identity.role === "vendor") {
-      return json(response, 200, { id: "vendor-1", businessName: "Test Vendor", status: "approved" });
+      return json(response, 200, {
+        id: "vendor-1",
+        businessName: "Test Vendor",
+        status: "approved",
+      });
     }
     if (path === "/admin/orders" && identity.role === "admin") {
       return json(response, 200, { data: [], page: 1, totalPages: 1 });

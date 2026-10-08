@@ -7,15 +7,15 @@ import { getMessages } from "next-intl/server";
 import AdminLayout from "../../components/AdminLayout";
 import QueryProvider from "../../lib/QueryProvider";
 
-const spaceGrotesk = localFont({
+const geist = localFont({
   src: "../fonts/GeistVF.woff",
-  variable: "--font-space-grotesk",
+  variable: "--font-jwso-sans",
   weight: "100 900",
 });
 
 export const metadata: Metadata = {
-  title: "Admin Command Center",
-  description: "Manage ecommerce platform globally.",
+  title: "JWSO | Admin",
+  description: "Manage the JWSO marketplace.",
 };
 
 export default async function RootLayout({
@@ -30,7 +30,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
-        className={`${spaceGrotesk.variable} antialiased`}
+        className={`${geist.variable} antialiased`}
         suppressHydrationWarning
       >
         <NextIntlClientProvider messages={messages} locale={locale}>

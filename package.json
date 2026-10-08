@@ -7,7 +7,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "check-types:e2e": "tsc --noEmit --module nodenext --moduleResolution nodenext --target es2022 --types node --skipLibCheck playwright.config.ts tests/e2e/auth-handoff.spec.ts tests/fixtures/mock-api.ts",
+    "check-types:e2e": "tsc --noEmit --module nodenext --moduleResolution nodenext --target es2022 --types node --skipLibCheck playwright.config.ts tests/e2e/auth-handoff.spec.ts tests/e2e/jwso-ui.spec.ts tests/fixtures/mock-api.ts",
     "test": "node --conditions=react-server --import tsx --test packages/api/src/server/*.test.ts",
     "test:e2e": "playwright test"
   },

@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-space-grotesk)", "sans-serif"],
+        sans: ["var(--font-jwso-sans)", "sans-serif"],
       },
       colors: {
         background: "var(--background)",
